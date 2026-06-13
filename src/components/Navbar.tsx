@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import { ShoppingBag, Menu, X, Crown, Search } from "lucide-react";
+import { ShoppingBag, Menu, X, Crown, Search, PackageSearch } from "lucide-react"; // أضفنا أيقونة التتبع
 import { useCart } from "@/context/CartContext";
 import Link from "next/link";
-import SmartSearch from "./SmartSearch"; // تأكدي من أنك أنشأتِ هذا الملف سابقاً
+import SmartSearch from "./SmartSearch";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false); // حالة التحكم في فتح نافذة البحث
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   const { totalItems, setIsCartOpen } = useCart();
 
@@ -18,7 +18,6 @@ export default function Navbar() {
   const navBg = useTransform(scrollY, [0, 100], ["rgba(5,5,5,0)", "rgba(5,5,5,0.9)"]);
   const navBlur = useTransform(scrollY, [0, 100], [0, 15]);
 
-  // التحكم في التمرير عند فتح القائمة أو نافذة البحث
   useEffect(() => {
     if (mobileOpen || isSearchOpen) {
       document.body.style.overflow = "hidden";
@@ -33,10 +32,12 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // تمت إضافة رابط "تتبع طلبك" هنا
   const navLinks = [
     { name: "الرئيسية", href: "/" },
     { name: "الأقسام", href: "/#categories" },
     { name: "المنتجات", href: "/#products" },
+    { name: "تتبع طلبك", href: "/track" },
     { name: "من نحن", href: "/#about" },
   ];
 
@@ -70,8 +71,13 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="text-sm text-white/70 hover:text-[#D4AF37] transition-colors duration-300 font-medium"
+                  className={`text-sm transition-colors duration-300 font-medium flex items-center gap-1.5 ${
+                    link.name === "تتبع طلبك" 
+                    ? "text-[#D4AF37] hover:text-white" // تمييز رابط التتبع باللون الذهبي
+                    : "text-white/70 hover:text-[#D4AF37]"
+                  }`}
                 >
+                  {link.name === "تتبع طلبك" && <PackageSearch className="w-4 h-4" />}
                   {link.name}
                 </Link>
               ))}
@@ -80,7 +86,7 @@ export default function Navbar() {
             {/* Actions */}
             <div className="flex items-center gap-4">
               
-              {/* زر البحث الذكي (يظهر في الكمبيوتر والموبايل) */}
+              {/* زر البحث الذكي */}
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className="text-white/60 hover:text-[#D4AF37] transition-colors p-2"
@@ -135,8 +141,11 @@ export default function Navbar() {
                 key={link.name} 
                 href={link.href} 
                 onClick={() => setMobileOpen(false)}
-                className="text-3xl font-serif text-white hover:text-[#D4AF37]"
+                className={`text-3xl font-serif flex items-center gap-3 ${
+                  link.name === "تتبع طلبك" ? "text-[#D4AF37]" : "text-white hover:text-[#D4AF37]"
+                }`}
               >
+                {link.name === "تتبع طلبك" && <PackageSearch className="w-7 h-7" />}
                 {link.name}
               </Link>
             ))}

@@ -1,5 +1,8 @@
 "use client";
 
+// 🛑 أضيفي هذا السطر لحل مشكلة الرفع على Cloudflare
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,19 +16,20 @@ import { formatPrice } from "@/lib/utils";
 type AdminTab = "dashboard" | "products" | "orders" | "customers";
 
 export default function AdminPage() {
+  // ... (باقي الكود يبقى كما هو تماماً بدون أي تغيير) ...
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [dbOrders, setDbOrders] = useState<any[]>([]);
-  const [promoCodes, setPromoCodes] = useState<any[]>([]); // حالة الأكواد
+  const [promoCodes, setPromoCodes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [notification, setNotification] = useState("");
   
-  const [newPromo, setNewPromo] = useState({ code: "", discount: "" }); // بيانات الكود الجديد
+  const [newPromo, setNewPromo] = useState({ code: "", discount: "" });
   const [productData, setProductData] = useState({
     name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [] as string[], videos: [] as string[]
   });
@@ -162,7 +166,7 @@ export default function AdminPage() {
               <div className="glass-card p-6 border-white/5 text-right">
                 <DollarSign className="text-luxury-beige mb-2 mr-0 ml-auto" />
                 <p className="text-xs uppercase opacity-40">إجمالي المبيعات</p>
-                <h2 className="text-3xl font-serif gold-gradient-text font-bold">{formatPrice(dbOrders.reduce((acc, o) => acc + o.total_price, 0))}</h2>
+                <h2 className="text-3xl font-serif gold-gradient-text font-bold">{formatPrice(dbOrders.reduce((acc, o) => acc + (o.total_amount || o.total_price || 0), 0))}</h2>
               </div>
               <div className="glass-card p-6 border-white/5 text-right">
                 <ShoppingCart className="text-luxury-beige mb-2 mr-0 ml-auto" />
@@ -215,7 +219,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ... بقية التبويبات (منتجات، طلبات) تبقى كما هي ... */}
         {activeTab === "products" && (
            <div className="space-y-6">
              <div className="flex justify-between items-center flex-row-reverse">
@@ -266,19 +269,19 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td className="p-6 text-xs opacity-60">{o.address} <br/> {o.city}</td>
-                      <td className="p-6 font-bold text-sm">{formatPrice(o.total_price)}</td>
+                      <td className="p-6 font-bold text-sm">{formatPrice(o.total_amount || o.total_price)}</td>
                       <td className="p-6 text-center">
                         <select 
                           value={o.status} 
                           onChange={(e) => updateOrderStatus(o.id, e.target.value)}
                           className={`text-[10px] font-bold p-2 rounded-lg border-none outline-none ${
-                            o.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500' : 
-                            o.status === 'shipped' ? 'bg-blue-500/10 text-blue-500' : 'bg-green-500/10 text-green-500'
+                            o.status === 'pending' || o.status === 'جاري التجهيز' ? 'bg-yellow-500/10 text-yellow-500' : 
+                            o.status === 'shipped' || o.status === 'في الطريق' ? 'bg-blue-500/10 text-blue-500' : 'bg-green-500/10 text-green-500'
                           }`}
                         >
-                          <option value="pending">قيد الانتظار</option>
-                          <option value="shipped">في الطريق</option>
-                          <option value="delivered">تم التوصيل</option>
+                          <option value="جاري التجهيز">قيد الانتظار</option>
+                          <option value="في الطريق">في الطريق</option>
+                          <option value="تم التوصيل">تم التوصيل</option>
                         </select>
                       </td>
                     </tr>
@@ -290,7 +293,7 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* MODAL ADD PRODUCT (كما هو) */}
+      {/* MODAL ADD PRODUCT */}
       <AnimatePresence>
         {showAddProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">

@@ -1,5 +1,8 @@
 "use client";
 
+// 🛑 هذا السطر هو الحل لمشكلة الرفع على Cloudflare
+export const dynamic = "force-dynamic";
+
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -85,7 +88,6 @@ export default function CheckoutPage() {
     const orderID = `#${newOrderNum}`;
 
     try {
-      // 1. الحفظ في Supabase (مع إرسال السعر للعمودين لمنع الأخطاء)
       const { error } = await supabase.from('orders').insert([{
         order_number: orderID,
         customer_name: formData.fullName,
@@ -93,19 +95,17 @@ export default function CheckoutPage() {
         address: formData.address,
         city: formData.city,
         total_amount: finalPrice,
-        total_price: finalPrice, // إرسال للعمود القديم أيضاً لمنع خطأ Not Null
+        total_price: finalPrice,
         notes: discountPercent > 0 ? `كود خصم: ${promoCode}` : "",
         items: items, 
         status: 'جاري التجهيز'
       }]);
       if (error) throw error;
 
-      // 2. تجهيز قائمة المنتجات
       const detailedItemsList = items.map((item) => 
         `- ${item.name} (الكمية: ${item.quantity})`
       ).join("%0A");
 
-      // 3. إرسال تنبيه تلغرام للإدارة
       const botToken = "8221648331:AAHQQT-1nEGbTHksAyAK5BVU4r8mqX61JOk";
       const chatId = "8459612624";
       const telegramItems = items.map((item) => `- ${item.name} (${item.quantity})`).join("\n");
@@ -117,7 +117,6 @@ export default function CheckoutPage() {
         body: JSON.stringify({ chat_id: chatId, text: telegramMessage }),
       });
 
-      // 4. فتح واتساب للزبون (بالتنسيق البسيط والمرتب الذي طلبتيه)
       const whatsappMessage = 
         `🏛️ طلب جديد%0A%0A` +
         `الاسم: ${formData.fullName}%0A` +
@@ -232,7 +231,6 @@ export default function CheckoutPage() {
             </AnimatePresence>
           </div>
 
-          {/* ملخص الطلب الجانبي */}
           <div className="lg:col-span-1">
             <div className="glass-card p-8 sticky top-28 border-luxury-beige/10">
               <h3 className="font-serif text-xl mb-6 text-right">ملخص الحقيبة</h3>

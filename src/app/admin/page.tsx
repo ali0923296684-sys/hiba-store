@@ -1,22 +1,20 @@
 "use client";
 
-// 🛑 أضيفي هذا السطر لحل مشكلة الرفع على Cloudflare
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, Package, ShoppingCart, Users,
+  LayoutDashboard, Package, ShoppingCart,
   Plus, Trash2, LogOut, Loader2, X, Upload, Film, Image as ImageIcon, 
-  CheckCircle2, DollarSign, Clock, Truck, Check, Tag
+  CheckCircle2, DollarSign, Tag
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
 
-type AdminTab = "dashboard" | "products" | "orders" | "customers";
+type AdminTab = "dashboard" | "products" | "orders";
 
 export default function AdminPage() {
-  // ... (باقي الكود يبقى كما هو تماماً بدون أي تغيير) ...
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
@@ -54,12 +52,10 @@ export default function AdminPage() {
   const handleAddPromo = async () => {
     if (!newPromo.code || !newPromo.discount) return;
     const { error } = await supabase.from('promo_codes').insert([{ 
-      code: newPromo.code.toUpperCase(), 
-      discount_percentage: parseInt(newPromo.discount),
-      is_active: true
+      code: newPromo.code.toUpperCase(), discount_percentage: parseInt(newPromo.discount), is_active: true
     }]);
     if (!error) {
-      showNotification("✅ تم إضافة كود الخصم بنجاح");
+      showNotification("✅ تم إضافة كود الخصم");
       setNewPromo({ code: "", discount: "" });
       fetchData();
     }
@@ -68,12 +64,12 @@ export default function AdminPage() {
   const deletePromo = async (id: number) => {
     await supabase.from('promo_codes').delete().eq('id', id);
     fetchData();
-    showNotification("🗑 تم حذف الكود");
+    showNotification("🗑 تم الحذف");
   };
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-    if (!error) { showNotification("✅ تم تحديث حالة الطلب"); fetchData(); }
+    if (!error) { showNotification("✅ تم التحديث"); fetchData(); }
   };
 
   const uploadFile = async (file: File) => {
@@ -108,7 +104,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (!productData.image) return alert("يرجى رفع صورة رئيسية");
     setIsSubmitting(true);
-    const { error } = await supabase.from('products').insert([{ ...productData, price: parseFloat(productData.price), inStock: true, rating: 5.0, brand: "دار هبة الرحمن" }]);
+    const { error } = await supabase.from('products').insert([{ ...productData, price: parseFloat(productData.price), inStock: true, rating: 5.0, brand: "هبة الرحمن" }]);
     if (!error) {
       showNotification("✨ تمت إضافة المنتج بنجاح");
       setShowAddProduct(false);
@@ -126,13 +122,19 @@ export default function AdminPage() {
 
   const showNotification = (msg: string) => {
     setNotification(msg);
-    setTimeout(() => setNotification(""), 4000);
+    setTimeout(() => setNotification(""), 3000);
   };
+
+  const navItems = [
+    { id: "dashboard", label: "الرئيسية", icon: LayoutDashboard },
+    { id: "products", label: "المنتجات", icon: Package },
+    { id: "orders", label: "الطلبات", icon: ShoppingCart },
+  ];
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card p-10 max-w-sm w-full border border-luxury-beige/20 text-center">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card p-8 max-w-sm w-full border border-luxury-beige/20 text-center">
           <LayoutDashboard className="w-12 h-12 text-luxury-beige mx-auto mb-4" />
           <h2 className="text-2xl font-serif mb-6 text-luxury-cream">دخول الإدارة</h2>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -146,72 +148,66 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-luxury-cream flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-dark-900 border-l border-luxury-beige/10 p-6 fixed h-full z-40 text-right">
-         <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-10 text-center">دار هبة الرحمن</h2>
-         <nav className="space-y-2">
-            <button onClick={() => setActiveTab("dashboard")} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === "dashboard" ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}><LayoutDashboard size={18}/> الرئيسية</button>
-            <button onClick={() => setActiveTab("products")} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === "products" ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}><Package size={18}/> المنتجات</button>
-            <button onClick={() => setActiveTab("orders")} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === "orders" ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}><ShoppingCart size={18}/> الطلبات</button>
-            <button onClick={() => setIsAuthenticated(false)} className="w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/5 mt-20"><LogOut size={18}/> خروج</button>
+    <div className="min-h-screen bg-[#050505] text-luxury-cream flex flex-col md:flex-row">
+      
+      {/* Sidebar (يظهر في الكمبيوتر فقط) */}
+      <div className="hidden md:flex w-64 bg-dark-900 border-l border-luxury-beige/10 p-6 fixed h-full z-40 flex-col">
+         <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-10 text-center">هبة الرحمن</h2>
+         <nav className="space-y-2 flex-1">
+            {navItems.map(item => (
+              <button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === item.id ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}>
+                <item.icon size={18}/> {item.label}
+              </button>
+            ))}
          </nav>
+         <button onClick={() => setIsAuthenticated(false)} className="w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/5"><LogOut size={18}/> خروج</button>
       </div>
 
-      <div className="flex-1 mr-64 p-8">
+      {/* Header (يظهر في الموبايل فقط) */}
+      <header className="md:hidden sticky top-0 z-30 bg-dark-900/90 backdrop-blur-lg border-b border-white/5 p-4 flex justify-between items-center">
+        <h2 className="font-serif text-xl font-bold gold-gradient-text">لوحة الإدارة</h2>
+        <button onClick={() => setIsAuthenticated(false)} className="text-red-400 p-2"><LogOut size={20}/></button>
+      </header>
+
+      {/* المحتوى الرئيسي */}
+      <div className="flex-1 md:mr-64 p-4 md:p-8 pb-28 md:pb-8">
+        
+        {/* DASHBOARD */}
         {activeTab === "dashboard" && (
-          <div className="space-y-12">
-            <h1 className="text-3xl font-serif text-right">ملخص المتجر</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="glass-card p-6 border-white/5 text-right">
-                <DollarSign className="text-luxury-beige mb-2 mr-0 ml-auto" />
-                <p className="text-xs uppercase opacity-40">إجمالي المبيعات</p>
-                <h2 className="text-3xl font-serif gold-gradient-text font-bold">{formatPrice(dbOrders.reduce((acc, o) => acc + (o.total_amount || o.total_price || 0), 0))}</h2>
+          <div className="space-y-8">
+            <h1 className="text-2xl md:text-3xl font-serif text-right">ملخص المتجر</h1>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="glass-card p-4 md:p-6 border-white/5 text-right">
+                <DollarSign className="text-luxury-beige mb-2 mr-auto" size={20} />
+                <p className="text-[10px] uppercase opacity-40">المبيعات</p>
+                <h2 className="text-lg md:text-3xl font-serif gold-gradient-text font-bold">{formatPrice(dbOrders.reduce((acc, o) => acc + (o.total_amount || o.total_price || 0), 0))}</h2>
               </div>
-              <div className="glass-card p-6 border-white/5 text-right">
-                <ShoppingCart className="text-luxury-beige mb-2 mr-0 ml-auto" />
-                <p className="text-xs uppercase opacity-40">عدد الطلبات</p>
-                <h2 className="text-3xl font-serif font-bold">{dbOrders.length}</h2>
+              <div className="glass-card p-4 md:p-6 border-white/5 text-right">
+                <ShoppingCart className="text-luxury-beige mb-2 mr-auto" size={20} />
+                <p className="text-[10px] uppercase opacity-40">الطلبات</p>
+                <h2 className="text-lg md:text-3xl font-serif font-bold">{dbOrders.length}</h2>
               </div>
-              <div className="glass-card p-6 border-white/5 text-right">
-                <Package className="text-luxury-beige mb-2 mr-0 ml-auto" />
-                <p className="text-xs uppercase opacity-40">المخزون</p>
-                <h2 className="text-3xl font-serif font-bold">{dbProducts.length} قطعة</h2>
+              <div className="glass-card p-4 md:p-6 border-white/5 text-right col-span-2 lg:col-span-1">
+                <Package className="text-luxury-beige mb-2 mr-auto" size={20} />
+                <p className="text-[10px] uppercase opacity-40">المنتجات</p>
+                <h2 className="text-lg md:text-3xl font-serif font-bold">{dbProducts.length}</h2>
               </div>
             </div>
 
-            {/* قسم إدارة أكواد الخصم */}
-            <div className="glass-card p-8 border-luxury-beige/10 text-right">
-              <div className="flex items-center justify-end gap-3 mb-6">
-                <h2 className="font-serif text-2xl gold-gradient-text">إدارة أكواد الخصم</h2>
-                <Tag className="text-luxury-beige" size={24} />
+            {/* أكواد الخصم */}
+            <div className="glass-card p-4 md:p-6 border-luxury-beige/10 text-right">
+              <div className="flex items-center justify-end gap-2 mb-4"><h2 className="font-serif text-lg md:text-xl">أكواد الخصم</h2><Tag size={18} className="text-luxury-beige" /></div>
+              <div className="flex flex-col sm:flex-row-reverse gap-2 mb-4">
+                <input placeholder="الكود" className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right uppercase text-sm" value={newPromo.code} onChange={e => setNewPromo({...newPromo, code: e.target.value})} />
+                <input type="number" placeholder="%" className="bg-dark-800 p-3 rounded-xl w-full sm:w-24 border border-white/5 outline-none text-center text-sm" value={newPromo.discount} onChange={e => setNewPromo({...newPromo, discount: e.target.value})} />
+                <button onClick={handleAddPromo} className="btn-primary px-6 py-3 rounded-xl text-sm font-bold">إضافة</button>
               </div>
-              
-              <div className="flex flex-row-reverse gap-4 mb-8">
-                <input 
-                  placeholder="الكود (مثلاً: HIBA10)" 
-                  className="bg-dark-800 p-4 rounded-xl flex-1 border border-white/5 outline-none focus:border-luxury-beige text-right uppercase"
-                  value={newPromo.code}
-                  onChange={e => setNewPromo({...newPromo, code: e.target.value})}
-                />
-                <input 
-                  type="number" 
-                  placeholder="الخصم %" 
-                  className="bg-dark-800 p-4 rounded-xl w-32 border border-white/5 outline-none focus:border-luxury-beige text-center"
-                  value={newPromo.discount}
-                  onChange={e => setNewPromo({...newPromo, discount: e.target.value})}
-                />
-                <button onClick={handleAddPromo} className="btn-primary px-8 rounded-xl font-bold">إضافة</button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="flex flex-wrap gap-2 justify-end">
                 {promoCodes.map(p => (
-                  <div key={p.id} className="bg-white/5 p-4 rounded-xl flex flex-row-reverse justify-between items-center border border-white/5">
-                    <div className="text-right">
-                      <p className="font-bold text-luxury-beige">{p.code}</p>
-                      <p className="text-[10px] opacity-40">خصم {p.discount_percentage}%</p>
-                    </div>
-                    <button onClick={() => deletePromo(p.id)} className="text-red-400 hover:bg-red-400/10 p-2 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                  <div key={p.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center gap-2 text-xs">
+                    <button onClick={() => deletePromo(p.id)} className="text-red-400"><X size={14}/></button>
+                    <span className="opacity-40">({p.discount_percentage}%)</span>
+                    <span className="font-bold text-luxury-beige">{p.code}</span>
                   </div>
                 ))}
               </div>
@@ -219,126 +215,115 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* PRODUCTS */}
         {activeTab === "products" && (
-           <div className="space-y-6">
-             <div className="flex justify-between items-center flex-row-reverse">
-               <h1 className="text-3xl font-serif">إدارة القطع</h1>
-               <button onClick={() => setShowAddProduct(true)} className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-bold"><Plus size={18}/> إضافة قطعة</button>
-             </div>
-             <div className="glass-card overflow-hidden rounded-2xl border border-white/5">
-               <table className="w-full text-right">
-                 <thead className="bg-white/5 text-[10px] uppercase text-luxury-beige">
-                   <tr><th className="p-6">المنتج</th><th className="p-6">القسم</th><th className="p-6">السعر</th><th className="p-6 text-center">حذف</th></tr>
-                 </thead>
-                 <tbody className="divide-y divide-white/5">
-                   {dbProducts.map(p => (
-                    <tr key={p.id} className="hover:bg-white/[0.01]">
-                      <td className="p-6 flex flex-row-reverse items-center gap-4"><img src={p.image} className="w-12 h-12 rounded-lg object-cover" /> <span className="font-bold">{p.name}</span></td>
-                      <td className="p-6 opacity-60 text-sm">{p.category}</td>
-                      <td className="p-6 font-bold">{formatPrice(p.price)}</td>
-                      <td className="p-6 text-center"><button onClick={async () => { if(confirm("حذف؟")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="text-red-400 hover:bg-red-400/10 p-2 rounded-lg"><Trash2 size={16}/></button></td>
-                    </tr>
-                  ))}
-                 </tbody>
-               </table>
-             </div>
-           </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center flex-row-reverse">
+              <h1 className="text-2xl md:text-3xl font-serif">المنتجات</h1>
+              <button onClick={() => setShowAddProduct(true)} className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"><Plus size={16}/> إضافة</button>
+            </div>
+            <div className="glass-card rounded-2xl border border-white/5 overflow-hidden divide-y divide-white/5">
+              {dbProducts.map(p => (
+                <div key={p.id} className="p-4 flex items-center justify-between gap-4">
+                  <button onClick={async () => { if(confirm("حذف؟")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="text-red-400/50 hover:text-red-400 p-2"><Trash2 size={18}/></button>
+                  <div className="flex-1 text-right min-w-0">
+                    <p className="font-bold text-sm truncate">{p.name}</p>
+                    <p className="text-xs gold-gradient-text font-bold">{formatPrice(p.price)}</p>
+                  </div>
+                  <img src={p.image} className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
+        {/* ORDERS */}
         {activeTab === "orders" && (
-           <div className="space-y-6">
-             <h1 className="text-3xl font-serif text-right">طلبات الزبائن</h1>
-             <div className="glass-card overflow-hidden rounded-2xl border border-white/5">
-               <table className="w-full text-right">
-                 <thead className="bg-white/5 text-[10px] uppercase text-luxury-beige">
-                   <tr><th className="p-6 text-right">رقم الطلب / الزبون</th><th className="p-6 text-right">المنتجات</th><th className="p-6 text-right">العنوان</th><th className="p-6 text-right">الإجمالي</th><th className="p-6 text-center">الحالة</th></tr>
-                 </thead>
-                 <tbody className="divide-y divide-white/5">
-                   {dbOrders.map(o => (
-                    <tr key={o.id} className="hover:bg-white/[0.01]">
-                      <td className="p-6">
-                        <p className="font-bold text-luxury-beige mb-1">{o.order_number}</p>
-                        <p className="text-sm">{o.customer_name}</p>
-                        <p className="text-[10px] opacity-40">{o.phone}</p>
-                      </td>
-                      <td className="p-6">
-                        <div className="flex flex-row-reverse justify-end -space-x-reverse -space-x-2">
-                          {o.items?.map((item: any, idx: number) => (
-                            <img key={idx} src={item.image} className="w-8 h-8 rounded-full border border-black object-cover" title={item.name} />
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-6 text-xs opacity-60">{o.address} <br/> {o.city}</td>
-                      <td className="p-6 font-bold text-sm">{formatPrice(o.total_amount || o.total_price)}</td>
-                      <td className="p-6 text-center">
-                        <select 
-                          value={o.status} 
-                          onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                          className={`text-[10px] font-bold p-2 rounded-lg border-none outline-none ${
-                            o.status === 'pending' || o.status === 'جاري التجهيز' ? 'bg-yellow-500/10 text-yellow-500' : 
-                            o.status === 'shipped' || o.status === 'في الطريق' ? 'bg-blue-500/10 text-blue-500' : 'bg-green-500/10 text-green-500'
-                          }`}
-                        >
-                          <option value="جاري التجهيز">قيد الانتظار</option>
-                          <option value="في الطريق">في الطريق</option>
-                          <option value="تم التوصيل">تم التوصيل</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                 </tbody>
-               </table>
-             </div>
-           </div>
+          <div className="space-y-4">
+            <h1 className="text-2xl md:text-3xl font-serif text-right">الطلبات</h1>
+            <div className="space-y-4">
+              {dbOrders.length === 0 && <p className="text-center opacity-40 py-10">لا توجد طلبات بعد</p>}
+              {dbOrders.map(o => (
+                <div key={o.id} className="glass-card p-4 rounded-2xl border border-white/5 text-right">
+                  <div className="flex justify-between items-center mb-3 pb-3 border-b border-white/5">
+                    <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className={`text-[10px] font-bold p-2 rounded-lg border-none outline-none ${o.status === 'تم التوصيل' ? 'bg-green-500/10 text-green-500' : o.status === 'في الطريق' ? 'bg-blue-500/10 text-blue-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                      <option value="جاري التجهيز">جاري التجهيز</option>
+                      <option value="في الطريق">في الطريق</option>
+                      <option value="تم التوصيل">تم التوصيل</option>
+                    </select>
+                    <span className="font-mono text-luxury-beige font-bold">{o.order_number}</span>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="opacity-40 text-xs">الزبون:</span> {o.customer_name}</p>
+                    <p><span className="opacity-40 text-xs">الهاتف:</span> <span dir="ltr" className="inline-block">{o.phone}</span></p>
+                    <p><span className="opacity-40 text-xs">العنوان:</span> {o.city} - {o.address}</p>
+                    <p className="font-bold pt-2">الإجمالي: <span className="gold-gradient-text">{formatPrice(o.total_amount || o.total_price)}</span></p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
+      </div>
+
+      {/* شريط التنقل السفلي (يظهر في الموبايل فقط) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-xl border-t border-luxury-beige/10 flex justify-around items-center p-2">
+        {navItems.map(item => (
+          <button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-20 transition-colors ${activeTab === item.id ? "text-luxury-beige" : "text-white/40"}`}>
+            <item.icon size={22} />
+            <span className="text-[10px]">{item.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* MODAL ADD PRODUCT */}
       <AnimatePresence>
         {showAddProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
-            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-dark-900 border border-white/10 p-8 rounded-[30px] w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="flex flex-row-reverse justify-between items-center mb-8">
-                <h2 className="text-2xl font-serif gold-gradient-text italic">إضافة قطعة ملكية جديدة</h2>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/95 backdrop-blur-xl">
+            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-dark-900 border border-white/10 p-6 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex flex-row-reverse justify-between items-center mb-6">
+                <h2 className="text-xl font-serif gold-gradient-text">إضافة قطعة</h2>
                 <button onClick={() => setShowAddProduct(false)}><X/></button>
               </div>
-              <form onSubmit={saveProduct} className="grid grid-cols-1 md:grid-cols-2 gap-8 text-right">
-                <div className="space-y-4">
-                  <input placeholder="اسم القطعة" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" onChange={e => setProductData({...productData, name: e.target.value})} />
-                  <input type="number" placeholder="السعر د.ل" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" onChange={e => setProductData({...productData, price: e.target.value})} />
-                  <select className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})}>
+              <form onSubmit={saveProduct} className="space-y-4 text-right">
+                <input placeholder="اسم القطعة" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" onChange={e => setProductData({...productData, name: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <select className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 text-sm" value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})}>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <textarea placeholder="وصف القطعة الفاخرة..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-32" onChange={e => setProductData({...productData, description: e.target.value})} />
+                  <input type="number" placeholder="السعر" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" onChange={e => setProductData({...productData, price: e.target.value})} />
                 </div>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="relative h-32 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center overflow-hidden">
-                      {productData.image ? <img src={productData.image} className="w-full h-full object-cover"/> : <Upload size={20} className="text-luxury-beige"/>}
-                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'main')}/>
-                    </div>
-                    <div className="relative h-32 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center">
-                      <ImageIcon size={20} className="text-luxury-beige"/>
-                      <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'gallery')}/>
-                    </div>
-                    <div className="relative h-32 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center col-span-2">
-                      {productData.videos.length > 0 ? <CheckCircle2 className="text-green-500"/> : <Film size={20} className="text-luxury-beige"/>}
-                      <input type="file" accept="video/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'video')}/>
-                    </div>
+                <textarea placeholder="الوصف..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-24" onChange={e => setProductData({...productData, description: e.target.value})} />
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center overflow-hidden">
+                    {productData.image ? <img src={productData.image} className="w-full h-full object-cover"/> : <Upload size={18} className="text-luxury-beige"/>}
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'main')}/>
                   </div>
-                  <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                    {isSubmitting ? <Loader2 className="animate-spin"/> : "نشر الآن"}
-                  </button>
+                  <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center">
+                    <ImageIcon size={18} className="text-luxury-beige"/>
+                    <span className="text-[8px] opacity-40 mt-1">معرض ({productData.images.length})</span>
+                    <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'gallery')}/>
+                  </div>
+                  <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center">
+                    {productData.videos.length > 0 ? <CheckCircle2 className="text-green-500"/> : <Film size={18} className="text-luxury-beige"/>}
+                    <input type="file" accept="video/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'video')}/>
+                  </div>
                 </div>
+
+                <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                  {isSubmitting ? <Loader2 className="animate-spin"/> : "نشر المنتج"}
+                </button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
+      {/* التنبيه */}
       <AnimatePresence>
         {notification && (
-          <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="fixed bottom-10 left-10 bg-white text-black px-6 py-3 rounded-xl font-bold shadow-2xl z-[100] border-r-4 border-luxury-beige">
+          <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -50, opacity: 0 }} className="fixed top-5 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-2xl z-[100] text-sm">
             {notification}
           </motion.div>
         )}

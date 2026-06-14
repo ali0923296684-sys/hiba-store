@@ -7,29 +7,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Package, ShoppingCart,
   Plus, Trash2, LogOut, Loader2, X, Upload, Film, Image as ImageIcon, 
-  CheckCircle2, DollarSign, Tag, Palette
+  CheckCircle2, DollarSign, Tag, Palette, Edit
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
 
 type AdminTab = "dashboard" | "products" | "orders";
 
-// 🎨 قائمة الألوان الجاهزة للاختيار منها (مع أكوادها لعرضها بصرياً)
 const availableColors = [
-  { name: "ذهبي", code: "#D4AF37" },
-  { name: "فضي", code: "#C0C0C0" },
-  { name: "أسود", code: "#1a1a1a" },
-  { name: "أبيض", code: "#FFFFFF" },
-  { name: "وردي", code: "#FFC0CB" },
-  { name: "أحمر", code: "#DC2626" },
-  { name: "أزرق", code: "#2563EB" },
-  { name: "أخضر", code: "#16A34A" },
-  { name: "بني", code: "#8B4513" },
-  { name: "بيج", code: "#E8D5A3" },
-  { name: "رصاصي", code: "#71717A" },
-  { name: "نحاسي", code: "#B87333" },
+  { name: "ذهبي", code: "#D4AF37" }, { name: "فضي", code: "#C0C0C0" }, { name: "أسود", code: "#1a1a1a" },
+  { name: "أبيض", code: "#FFFFFF" }, { name: "وردي", code: "#FFC0CB" }, { name: "أحمر", code: "#DC2626" },
+  { name: "أزرق", code: "#2563EB" }, { name: "أخضر", code: "#16A34A" }, { name: "بني", code: "#8B4513" },
+  { name: "بيج", code: "#E8D5A3" }, { name: "رصاصي", code: "#71717A" }, { name: "نحاسي", code: "#B87333" },
 ];
-
 const availableSizes = ["S", "M", "L", "XL", "36", "37", "38", "39", "40", "41", "42"];
 
 export default function AdminPage() {
@@ -44,13 +34,12 @@ export default function AdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [notification, setNotification] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null); // 🆕 لتحديد إذا كنا في وضع التعديل
   
   const [newPromo, setNewPromo] = useState({ code: "", discount: "" });
-  // الآن colors و sizes أصبحتا قوائم (Arrays) مباشرة
   const [productData, setProductData] = useState({
     name: "", price: "", category: "إكسسوارات", description: "", image: "", 
-    images: [] as string[], videos: [] as string[], 
-    colors: [] as string[], sizes: [] as string[]
+    images: [] as string[], videos: [] as string[], colors: [] as string[], sizes: [] as string[]
   });
 
   const categories = ["عطور فاخرة", "حقائب يد", "مجوهرات", "ساعات فاخرة", "أحذية فاخرة", "إكسسوارات"];
@@ -70,24 +59,35 @@ export default function AdminPage() {
     if (isAuthenticated) fetchData();
   }, [isAuthenticated, fetchData]);
 
-  // دالة لإضافة/إزالة اللون عند الضغط عليه
-  const toggleColor = (colorName: string) => {
-    setProductData(prev => ({
-      ...prev,
-      colors: prev.colors.includes(colorName) 
-        ? prev.colors.filter(c => c !== colorName) 
-        : [...prev.colors, colorName]
-    }));
+  // 🆕 فتح نافذة الإضافة (فارغة)
+  const openAddModal = () => {
+    setEditingId(null);
+    setProductData({ name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [], videos: [], colors: [], sizes: [] });
+    setShowAddProduct(true);
   };
 
-  // دالة لإضافة/إزالة المقاس
+  // 🆕 فتح نافذة التعديل (مملوءة بالبيانات)
+  const openEditModal = (product: any) => {
+    setEditingId(product.id);
+    setProductData({
+      name: product.name || "",
+      price: String(product.price || ""),
+      category: product.category || "إكسسوارات",
+      description: product.description || "",
+      image: product.image || "",
+      images: product.images || [],
+      videos: product.videos || [],
+      colors: product.colors || [],
+      sizes: product.sizes || [],
+    });
+    setShowAddProduct(true);
+  };
+
+  const toggleColor = (colorName: string) => {
+    setProductData(prev => ({ ...prev, colors: prev.colors.includes(colorName) ? prev.colors.filter(c => c !== colorName) : [...prev.colors, colorName] }));
+  };
   const toggleSize = (size: string) => {
-    setProductData(prev => ({
-      ...prev,
-      sizes: prev.sizes.includes(size) 
-        ? prev.sizes.filter(s => s !== size) 
-        : [...prev.sizes, size]
-    }));
+    setProductData(prev => ({ ...prev, sizes: prev.sizes.includes(size) ? prev.sizes.filter(s => s !== size) : [...prev.sizes, size] }));
   };
 
   const handleAddPromo = async () => {
@@ -135,23 +135,34 @@ export default function AdminPage() {
     finally { setIsSubmitting(false); }
   };
 
-  // دالة الحفظ (أصبحت أبسط لأن colors و sizes جاهزة كقوائم)
+  // 🆕 دالة الحفظ المحدثة (تفرق بين الإضافة والتعديل)
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productData.image) return alert("يرجى رفع صورة رئيسية");
     setIsSubmitting(true);
 
-    const { error } = await supabase.from('products').insert([{ 
+    const dataToSave = {
       name: productData.name, price: parseFloat(productData.price), category: productData.category,
       description: productData.description, image: productData.image, images: productData.images,
       videos: productData.videos, colors: productData.colors, sizes: productData.sizes,
-      inStock: true, rating: 5.0, brand: "هبة الرحمن" 
-    }]);
+      brand: "هبة الرحمن"
+    };
+
+    let error;
+    if (editingId) {
+      // وضع التعديل (Update)
+      const res = await supabase.from('products').update(dataToSave).eq('id', editingId);
+      error = res.error;
+    } else {
+      // وضع الإضافة (Insert)
+      const res = await supabase.from('products').insert([{ ...dataToSave, inStock: true, rating: 5.0 }]);
+      error = res.error;
+    }
 
     if (!error) {
-      showNotification("✨ تمت إضافة المنتج بنجاح");
+      showNotification(editingId ? "✅ تم تعديل المنتج بنجاح" : "✨ تمت إضافة المنتج بنجاح");
       setShowAddProduct(false);
-      setProductData({ name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [], videos: [], colors: [], sizes: [] });
+      setEditingId(null);
       fetchData();
     } else { alert("خطأ: " + error.message); }
     setIsSubmitting(false);
@@ -192,27 +203,20 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-luxury-cream flex flex-col md:flex-row">
-      {/* Sidebar (كمبيوتر) */}
       <div className="hidden md:flex w-64 bg-dark-900 border-l border-luxury-beige/10 p-6 fixed h-full z-40 flex-col">
          <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-10 text-center">هبة الرحمن</h2>
          <nav className="space-y-2 flex-1">
-            {navItems.map(item => (
-              <button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === item.id ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}>
-                <item.icon size={18}/> {item.label}
-              </button>
-            ))}
+            {navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === item.id ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}><item.icon size={18}/> {item.label}</button>))}
          </nav>
          <button onClick={() => setIsAuthenticated(false)} className="w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/5"><LogOut size={18}/> خروج</button>
       </div>
 
-      {/* Header (موبايل) */}
       <header className="md:hidden sticky top-0 z-30 bg-dark-900/90 backdrop-blur-lg border-b border-white/5 p-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-bold gold-gradient-text">لوحة الإدارة</h2>
         <button onClick={() => setIsAuthenticated(false)} className="text-red-400 p-2"><LogOut size={20}/></button>
       </header>
 
       <div className="flex-1 md:mr-64 p-4 md:p-8 pb-28 md:pb-8">
-        {/* DASHBOARD */}
         {activeTab === "dashboard" && (
           <div className="space-y-8">
             <h1 className="text-2xl md:text-3xl font-serif text-right">ملخص المتجر</h1>
@@ -235,17 +239,20 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* PRODUCTS */}
+        {/* PRODUCTS - تمت إضافة زر التعديل هنا */}
         {activeTab === "products" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center flex-row-reverse">
               <h1 className="text-2xl md:text-3xl font-serif">المنتجات</h1>
-              <button onClick={() => setShowAddProduct(true)} className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"><Plus size={16}/> إضافة</button>
+              <button onClick={openAddModal} className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"><Plus size={16}/> إضافة</button>
             </div>
             <div className="glass-card rounded-2xl border border-white/5 overflow-hidden divide-y divide-white/5">
               {dbProducts.map(p => (
                 <div key={p.id} className="p-4 flex items-center justify-between gap-4">
-                  <button onClick={async () => { if(confirm("حذف؟")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="text-red-400/50 hover:text-red-400 p-2"><Trash2 size={18}/></button>
+                  <div className="flex gap-1">
+                    <button onClick={async () => { if(confirm("حذف؟")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="text-red-400/50 hover:text-red-400 p-2"><Trash2 size={18}/></button>
+                    <button onClick={() => openEditModal(p)} className="text-blue-400/50 hover:text-blue-400 p-2"><Edit size={18}/></button>
+                  </div>
                   <div className="flex-1 text-right min-w-0">
                     <p className="font-bold text-sm truncate">{p.name}</p>
                     <p className="text-xs gold-gradient-text font-bold">{formatPrice(p.price)}</p>
@@ -258,7 +265,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ORDERS */}
         {activeTab === "orders" && (
           <div className="space-y-4">
             <h1 className="text-2xl md:text-3xl font-serif text-right">الطلبات</h1>
@@ -268,9 +274,7 @@ export default function AdminPage() {
                 <div key={o.id} className="glass-card p-4 rounded-2xl border border-white/5 text-right">
                   <div className="flex justify-between items-center mb-3 pb-3 border-b border-white/5">
                     <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className={`text-[10px] font-bold p-2 rounded-lg border-none outline-none ${o.status === 'تم التوصيل' ? 'bg-green-500/10 text-green-500' : o.status === 'في الطريق' ? 'bg-blue-500/10 text-blue-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
-                      <option value="جاري التجهيز">جاري التجهيز</option>
-                      <option value="في الطريق">في الطريق</option>
-                      <option value="تم التوصيل">تم التوصيل</option>
+                      <option value="جاري التجهيز">جاري التجهيز</option><option value="في الطريق">في الطريق</option><option value="تم التوصيل">تم التوصيل</option>
                     </select>
                     <span className="font-mono text-luxury-beige font-bold">{o.order_number}</span>
                   </div>
@@ -279,9 +283,7 @@ export default function AdminPage() {
                     <p><span className="opacity-40 text-xs">الهاتف:</span> <span dir="ltr" className="inline-block">{o.phone}</span></p>
                     <p><span className="opacity-40 text-xs">العنوان:</span> {o.city} - {o.address}</p>
                     <div className="pt-2 mt-2 border-t border-white/5">
-                       {o.items?.map((item: any, idx: number) => (
-                         <p key={idx} className="text-xs opacity-70">• {item.name} {item.selectedColor && <span className="text-luxury-beige font-bold">(اللون: {item.selectedColor})</span>} {item.selectedSize && <span className="text-blue-400">(المقاس: {item.selectedSize})</span>}</p>
-                       ))}
+                       {o.items?.map((item: any, idx: number) => (<p key={idx} className="text-xs opacity-70">• {item.name} {item.selectedColor && <span className="text-luxury-beige font-bold">(اللون: {item.selectedColor})</span>}</p>))}
                     </div>
                     <p className="font-bold pt-2">الإجمالي: <span className="gold-gradient-text">{formatPrice(o.total_amount || o.total_price)}</span></p>
                   </div>
@@ -292,22 +294,17 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* شريط التنقل السفلي (موبايل) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-xl border-t border-luxury-beige/10 flex justify-around items-center p-2">
-        {navItems.map(item => (
-          <button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-20 transition-colors ${activeTab === item.id ? "text-luxury-beige" : "text-white/40"}`}>
-            <item.icon size={22} /><span className="text-[10px]">{item.label}</span>
-          </button>
-        ))}
+        {navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-20 transition-colors ${activeTab === item.id ? "text-luxury-beige" : "text-white/40"}`}><item.icon size={22} /><span className="text-[10px]">{item.label}</span></button>))}
       </div>
 
-      {/* MODAL ADD PRODUCT */}
+      {/* MODAL (يعمل للإضافة والتعديل) */}
       <AnimatePresence>
         {showAddProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/95 backdrop-blur-xl">
             <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-dark-900 border border-white/10 p-6 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex flex-row-reverse justify-between items-center mb-6">
-                <h2 className="text-xl font-serif gold-gradient-text">إضافة قطعة</h2>
+                <h2 className="text-xl font-serif gold-gradient-text">{editingId ? "تعديل المنتج" : "إضافة قطعة"}</h2>
                 <button onClick={() => setShowAddProduct(false)}><X/></button>
               </div>
               <form onSubmit={saveProduct} className="space-y-4 text-right">
@@ -320,49 +317,25 @@ export default function AdminPage() {
                 </div>
                 <textarea placeholder="الوصف..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-24" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} />
                 
-                {/* 🎨 اختيار الألوان بالضغط (الميزة الجديدة) */}
                 <div className="bg-dark-800/50 p-4 rounded-2xl border border-luxury-beige/10 space-y-4">
-                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm"><span>اختاري الألوان المتوفرة (اضغطي عليها)</span><Palette size={16}/></div>
+                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm"><span>اختاري الألوان المتوفرة</span><Palette size={16}/></div>
                   <div className="flex flex-wrap gap-2 justify-end">
                     {availableColors.map(color => (
-                      <button
-                        type="button"
-                        key={color.name}
-                        onClick={() => toggleColor(color.name)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-xs font-bold ${
-                          productData.colors.includes(color.name)
-                          ? 'border-luxury-beige bg-luxury-beige/10 scale-105'
-                          : 'border-white/5 opacity-60 hover:opacity-100'
-                        }`}
-                      >
+                      <button type="button" key={color.name} onClick={() => toggleColor(color.name)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-xs font-bold ${productData.colors.includes(color.name) ? 'border-luxury-beige bg-luxury-beige/10 scale-105' : 'border-white/5 opacity-60'}`}>
                         <span className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: color.code }}></span>
                         {color.name}
                         {productData.colors.includes(color.name) && <CheckCircle2 size={14} className="text-luxury-beige" />}
                       </button>
                     ))}
                   </div>
-
-                  {/* اختيار المقاسات */}
                   <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm pt-2 border-t border-white/5"><span>المقاسات (اختياري)</span></div>
                   <div className="flex flex-wrap gap-2 justify-end">
                     {availableSizes.map(size => (
-                      <button
-                        type="button"
-                        key={size}
-                        onClick={() => toggleSize(size)}
-                        className={`min-w-[40px] px-3 py-2 rounded-lg border-2 transition-all text-xs font-bold ${
-                          productData.sizes.includes(size)
-                          ? 'border-luxury-beige bg-luxury-beige text-dark-900'
-                          : 'border-white/5 opacity-60 hover:opacity-100'
-                        }`}
-                      >
-                        {size}
-                      </button>
+                      <button type="button" key={size} onClick={() => toggleSize(size)} className={`min-w-[40px] px-3 py-2 rounded-lg border-2 transition-all text-xs font-bold ${productData.sizes.includes(size) ? 'border-luxury-beige bg-luxury-beige text-dark-900' : 'border-white/5 opacity-60'}`}>{size}</button>
                     ))}
                   </div>
                 </div>
 
-                {/* رفع الوسائط */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center overflow-hidden">
                     {productData.image ? <img src={productData.image} className="w-full h-full object-cover"/> : <Upload size={18} className="text-luxury-beige"/>}
@@ -379,7 +352,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                  {isSubmitting ? <Loader2 className="animate-spin"/> : "نشر المنتج"}
+                  {isSubmitting ? <Loader2 className="animate-spin"/> : (editingId ? "حفظ التعديلات" : "نشر المنتج")}
                 </button>
               </form>
             </motion.div>

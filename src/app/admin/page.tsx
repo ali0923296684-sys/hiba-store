@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Package, ShoppingCart,
   Plus, Trash2, LogOut, Loader2, X, Upload, Film, Image as ImageIcon, 
-  CheckCircle2, DollarSign, Tag
+  CheckCircle2, DollarSign, Tag, Palette
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
@@ -28,8 +28,10 @@ export default function AdminPage() {
   const [notification, setNotification] = useState("");
   
   const [newPromo, setNewPromo] = useState({ code: "", discount: "" });
+  // 🎨 أضفنا colors و sizes هنا
   const [productData, setProductData] = useState({
-    name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [] as string[], videos: [] as string[]
+    name: "", price: "", category: "إكسسوارات", description: "", image: "", 
+    images: [] as string[], videos: [] as string[], colors: "", sizes: ""
   });
 
   const categories = ["عطور فاخرة", "حقائب يد", "مجوهرات", "ساعات فاخرة", "أحذية فاخرة", "إكسسوارات"];
@@ -100,16 +102,35 @@ export default function AdminPage() {
     finally { setIsSubmitting(false); }
   };
 
+  // 🎨 دالة الحفظ المحدثة (تحول الألوان والمقاسات لقائمة)
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productData.image) return alert("يرجى رفع صورة رئيسية");
     setIsSubmitting(true);
-    const { error } = await supabase.from('products').insert([{ ...productData, price: parseFloat(productData.price), inStock: true, rating: 5.0, brand: "هبة الرحمن" }]);
+
+    const colorsArray = productData.colors ? productData.colors.split(',').map(c => c.trim()).filter(c => c) : [];
+    const sizesArray = productData.sizes ? productData.sizes.split(',').map(s => s.trim()).filter(s => s) : [];
+
+    const { error } = await supabase.from('products').insert([{ 
+      name: productData.name,
+      price: parseFloat(productData.price),
+      category: productData.category,
+      description: productData.description,
+      image: productData.image,
+      images: productData.images,
+      videos: productData.videos,
+      colors: colorsArray, // حفظ الألوان
+      sizes: sizesArray,   // حفظ المقاسات
+      inStock: true, rating: 5.0, brand: "هبة الرحمن" 
+    }]);
+
     if (!error) {
       showNotification("✨ تمت إضافة المنتج بنجاح");
       setShowAddProduct(false);
-      setProductData({ name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [], videos: [] });
+      setProductData({ name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [], videos: [], colors: "", sizes: "" });
       fetchData();
+    } else {
+      alert("خطأ: " + error.message);
     }
     setIsSubmitting(false);
   };
@@ -150,7 +171,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-luxury-cream flex flex-col md:flex-row">
       
-      {/* Sidebar (يظهر في الكمبيوتر فقط) */}
+      {/* Sidebar (كمبيوتر) */}
       <div className="hidden md:flex w-64 bg-dark-900 border-l border-luxury-beige/10 p-6 fixed h-full z-40 flex-col">
          <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-10 text-center">هبة الرحمن</h2>
          <nav className="space-y-2 flex-1">
@@ -163,53 +184,31 @@ export default function AdminPage() {
          <button onClick={() => setIsAuthenticated(false)} className="w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/5"><LogOut size={18}/> خروج</button>
       </div>
 
-      {/* Header (يظهر في الموبايل فقط) */}
+      {/* Header (موبايل) */}
       <header className="md:hidden sticky top-0 z-30 bg-dark-900/90 backdrop-blur-lg border-b border-white/5 p-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-bold gold-gradient-text">لوحة الإدارة</h2>
         <button onClick={() => setIsAuthenticated(false)} className="text-red-400 p-2"><LogOut size={20}/></button>
       </header>
 
-      {/* المحتوى الرئيسي */}
       <div className="flex-1 md:mr-64 p-4 md:p-8 pb-28 md:pb-8">
-        
         {/* DASHBOARD */}
         {activeTab === "dashboard" && (
           <div className="space-y-8">
             <h1 className="text-2xl md:text-3xl font-serif text-right">ملخص المتجر</h1>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="glass-card p-4 md:p-6 border-white/5 text-right">
-                <DollarSign className="text-luxury-beige mb-2 mr-auto" size={20} />
-                <p className="text-[10px] uppercase opacity-40">المبيعات</p>
-                <h2 className="text-lg md:text-3xl font-serif gold-gradient-text font-bold">{formatPrice(dbOrders.reduce((acc, o) => acc + (o.total_amount || o.total_price || 0), 0))}</h2>
-              </div>
-              <div className="glass-card p-4 md:p-6 border-white/5 text-right">
-                <ShoppingCart className="text-luxury-beige mb-2 mr-auto" size={20} />
-                <p className="text-[10px] uppercase opacity-40">الطلبات</p>
-                <h2 className="text-lg md:text-3xl font-serif font-bold">{dbOrders.length}</h2>
-              </div>
-              <div className="glass-card p-4 md:p-6 border-white/5 text-right col-span-2 lg:col-span-1">
-                <Package className="text-luxury-beige mb-2 mr-auto" size={20} />
-                <p className="text-[10px] uppercase opacity-40">المنتجات</p>
-                <h2 className="text-lg md:text-3xl font-serif font-bold">{dbProducts.length}</h2>
-              </div>
+              <div className="glass-card p-4 md:p-6 border-white/5 text-right"><DollarSign className="text-luxury-beige mb-2 mr-auto" size={20} /><p className="text-[10px] uppercase opacity-40">المبيعات</p><h2 className="text-lg md:text-3xl font-serif gold-gradient-text font-bold">{formatPrice(dbOrders.reduce((acc, o) => acc + (o.total_amount || o.total_price || 0), 0))}</h2></div>
+              <div className="glass-card p-4 md:p-6 border-white/5 text-right"><ShoppingCart className="text-luxury-beige mb-2 mr-auto" size={20} /><p className="text-[10px] uppercase opacity-40">الطلبات</p><h2 className="text-lg md:text-3xl font-serif font-bold">{dbOrders.length}</h2></div>
+              <div className="glass-card p-4 md:p-6 border-white/5 text-right col-span-2 lg:col-span-1"><Package className="text-luxury-beige mb-2 mr-auto" size={20} /><p className="text-[10px] uppercase opacity-40">المنتجات</p><h2 className="text-lg md:text-3xl font-serif font-bold">{dbProducts.length}</h2></div>
             </div>
-
-            {/* أكواد الخصم */}
             <div className="glass-card p-4 md:p-6 border-luxury-beige/10 text-right">
-              <div className="flex items-center justify-end gap-2 mb-4"><h2 className="font-serif text-lg md:text-xl">أكواد الخصم</h2><Tag size={18} className="text-luxury-beige" /></div>
+              <div className="flex items-center justify-end gap-2 mb-4"><h2 className="font-serif text-lg">أكواد الخصم</h2><Tag size={18} className="text-luxury-beige" /></div>
               <div className="flex flex-col sm:flex-row-reverse gap-2 mb-4">
                 <input placeholder="الكود" className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right uppercase text-sm" value={newPromo.code} onChange={e => setNewPromo({...newPromo, code: e.target.value})} />
                 <input type="number" placeholder="%" className="bg-dark-800 p-3 rounded-xl w-full sm:w-24 border border-white/5 outline-none text-center text-sm" value={newPromo.discount} onChange={e => setNewPromo({...newPromo, discount: e.target.value})} />
                 <button onClick={handleAddPromo} className="btn-primary px-6 py-3 rounded-xl text-sm font-bold">إضافة</button>
               </div>
               <div className="flex flex-wrap gap-2 justify-end">
-                {promoCodes.map(p => (
-                  <div key={p.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center gap-2 text-xs">
-                    <button onClick={() => deletePromo(p.id)} className="text-red-400"><X size={14}/></button>
-                    <span className="opacity-40">({p.discount_percentage}%)</span>
-                    <span className="font-bold text-luxury-beige">{p.code}</span>
-                  </div>
-                ))}
+                {promoCodes.map(p => (<div key={p.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center gap-2 text-xs"><button onClick={() => deletePromo(p.id)} className="text-red-400"><X size={14}/></button><span className="opacity-40">({p.discount_percentage}%)</span><span className="font-bold text-luxury-beige">{p.code}</span></div>))}
               </div>
             </div>
           </div>
@@ -229,6 +228,7 @@ export default function AdminPage() {
                   <div className="flex-1 text-right min-w-0">
                     <p className="font-bold text-sm truncate">{p.name}</p>
                     <p className="text-xs gold-gradient-text font-bold">{formatPrice(p.price)}</p>
+                    {p.colors && p.colors.length > 0 && <p className="text-[10px] opacity-40 mt-1">الألوان: {p.colors.join('، ')}</p>}
                   </div>
                   <img src={p.image} className="w-14 h-14 rounded-xl object-cover shrink-0" />
                 </div>
@@ -257,6 +257,12 @@ export default function AdminPage() {
                     <p><span className="opacity-40 text-xs">الزبون:</span> {o.customer_name}</p>
                     <p><span className="opacity-40 text-xs">الهاتف:</span> <span dir="ltr" className="inline-block">{o.phone}</span></p>
                     <p><span className="opacity-40 text-xs">العنوان:</span> {o.city} - {o.address}</p>
+                    {/* 🎯 عرض المنتجات والألوان المطلوبة */}
+                    <div className="pt-2 mt-2 border-t border-white/5">
+                       {o.items?.map((item: any, idx: number) => (
+                         <p key={idx} className="text-xs opacity-70">• {item.name} {item.selectedColor && <span className="text-luxury-beige font-bold">(اللون: {item.selectedColor})</span>} {item.selectedSize && <span className="text-blue-400">(المقاس: {item.selectedSize})</span>}</p>
+                       ))}
+                    </div>
                     <p className="font-bold pt-2">الإجمالي: <span className="gold-gradient-text">{formatPrice(o.total_amount || o.total_price)}</span></p>
                   </div>
                 </div>
@@ -266,12 +272,11 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* شريط التنقل السفلي (يظهر في الموبايل فقط) */}
+      {/* شريط التنقل السفلي (موبايل) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-xl border-t border-luxury-beige/10 flex justify-around items-center p-2">
         {navItems.map(item => (
           <button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-20 transition-colors ${activeTab === item.id ? "text-luxury-beige" : "text-white/40"}`}>
-            <item.icon size={22} />
-            <span className="text-[10px]">{item.label}</span>
+            <item.icon size={22} /><span className="text-[10px]">{item.label}</span>
           </button>
         ))}
       </div>
@@ -295,14 +300,31 @@ export default function AdminPage() {
                 </div>
                 <textarea placeholder="الوصف..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-24" onChange={e => setProductData({...productData, description: e.target.value})} />
                 
+                {/* 🎨 حقول الألوان والمقاسات الجديدة */}
+                <div className="bg-dark-800/50 p-4 rounded-2xl border border-luxury-beige/10 space-y-3">
+                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm"><span>الألوان والمقاسات المتوفرة</span><Palette size={16}/></div>
+                  <input 
+                    placeholder="الألوان (افصلي بفاصلة): ذهبي، فضي، أسود" 
+                    className="text-right w-full bg-dark-900 p-3 rounded-xl outline-none border border-white/5 text-sm" 
+                    value={productData.colors}
+                    onChange={e => setProductData({...productData, colors: e.target.value})} 
+                  />
+                  <input 
+                    placeholder="المقاسات (اختياري): S، M، L" 
+                    className="text-right w-full bg-dark-900 p-3 rounded-xl outline-none border border-white/5 text-sm" 
+                    value={productData.sizes}
+                    onChange={e => setProductData({...productData, sizes: e.target.value})} 
+                  />
+                </div>
+
+                {/* رفع الوسائط */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center overflow-hidden">
                     {productData.image ? <img src={productData.image} className="w-full h-full object-cover"/> : <Upload size={18} className="text-luxury-beige"/>}
                     <input type="file" accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'main')}/>
                   </div>
                   <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center">
-                    <ImageIcon size={18} className="text-luxury-beige"/>
-                    <span className="text-[8px] opacity-40 mt-1">معرض ({productData.images.length})</span>
+                    <ImageIcon size={18} className="text-luxury-beige"/><span className="text-[8px] opacity-40 mt-1">معرض ({productData.images.length})</span>
                     <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'gallery')}/>
                   </div>
                   <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center">
@@ -320,7 +342,6 @@ export default function AdminPage() {
         )}
       </AnimatePresence>
 
-      {/* التنبيه */}
       <AnimatePresence>
         {notification && (
           <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -50, opacity: 0 }} className="fixed top-5 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-2xl z-[100] text-sm">

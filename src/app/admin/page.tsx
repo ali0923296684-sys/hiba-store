@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Package, ShoppingCart,
   Plus, Trash2, LogOut, Loader2, X, Upload, Film, Image as ImageIcon, 
-  CheckCircle2, DollarSign, Tag, Palette, Edit
+  CheckCircle2, DollarSign, Tag, Palette, Edit, MapPin
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
@@ -30,13 +30,15 @@ export default function AdminPage() {
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [dbOrders, setDbOrders] = useState<any[]>([]);
   const [promoCodes, setPromoCodes] = useState<any[]>([]);
+  const [dbCities, setDbCities] = useState<any[]>([]); // 🗺️ حالة المدن
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [notification, setNotification] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null); // 🆕 لتحديد إذا كنا في وضع التعديل
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   const [newPromo, setNewPromo] = useState({ code: "", discount: "" });
+  const [newCity, setNewCity] = useState({ name: "", cost: "" }); // 🗺️ حالة المدينة الجديدة
   const [productData, setProductData] = useState({
     name: "", price: "", category: "إكسسوارات", description: "", image: "", 
     images: [] as string[], videos: [] as string[], colors: [] as string[], sizes: [] as string[]
@@ -49,9 +51,11 @@ export default function AdminPage() {
     const { data: products } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
     const { data: promos } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
+    const { data: cities } = await supabase.from('cities').select('*').order('name'); // 🗺️ جلب المدن
     if (products) setDbProducts(products);
     if (orders) setDbOrders(orders);
     if (promos) setPromoCodes(promos);
+    if (cities) setDbCities(cities);
     setIsLoading(false);
   }, []);
 
@@ -59,26 +63,37 @@ export default function AdminPage() {
     if (isAuthenticated) fetchData();
   }, [isAuthenticated, fetchData]);
 
-  // 🆕 فتح نافذة الإضافة (فارغة)
+  // 🗺️ دوال المدن
+  const handleAddCity = async () => {
+    if (!newCity.name) return;
+    const { error } = await supabase.from('cities').insert([{ name: newCity.name, shipping_cost: parseInt(newCity.cost) || 0 }]);
+    if (!error) { showNotification("✅ تم إضافة المدينة"); setNewCity({ name: "", cost: "" }); fetchData(); }
+    else { alert("ربما المدينة موجودة بالفعل!"); }
+  };
+  const deleteCity = async (id: number) => {
+    await supabase.from('cities').delete().eq('id', id);
+    fetchData();
+    showNotification("🗑 تم حذف المدينة");
+  };
+
+  // 🛑 الدالة المفقودة التي تسبب الخطأ (تمت إعادتها)
+  const updateOrderStatus = async (orderId: number, newStatus: string) => {
+    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+    if (!error) { showNotification("✅ تم التحديث"); fetchData(); }
+  };
+
   const openAddModal = () => {
     setEditingId(null);
     setProductData({ name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [], videos: [], colors: [], sizes: [] });
     setShowAddProduct(true);
   };
 
-  // 🆕 فتح نافذة التعديل (مملوءة بالبيانات)
   const openEditModal = (product: any) => {
     setEditingId(product.id);
     setProductData({
-      name: product.name || "",
-      price: String(product.price || ""),
-      category: product.category || "إكسسوارات",
-      description: product.description || "",
-      image: product.image || "",
-      images: product.images || [],
-      videos: product.videos || [],
-      colors: product.colors || [],
-      sizes: product.sizes || [],
+      name: product.name || "", price: String(product.price || ""), category: product.category || "إكسسوارات",
+      description: product.description || "", image: product.image || "", images: product.images || [],
+      videos: product.videos || [], colors: product.colors || [], sizes: product.sizes || [],
     });
     setShowAddProduct(true);
   };
@@ -95,16 +110,10 @@ export default function AdminPage() {
     const { error } = await supabase.from('promo_codes').insert([{ code: newPromo.code.toUpperCase(), discount_percentage: parseInt(newPromo.discount), is_active: true }]);
     if (!error) { showNotification("✅ تم إضافة كود الخصم"); setNewPromo({ code: "", discount: "" }); fetchData(); }
   };
-
   const deletePromo = async (id: number) => {
     await supabase.from('promo_codes').delete().eq('id', id);
     fetchData();
     showNotification("🗑 تم الحذف");
-  };
-
-  const updateOrderStatus = async (orderId: number, newStatus: string) => {
-    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-    if (!error) { showNotification("✅ تم التحديث"); fetchData(); }
   };
 
   const uploadFile = async (file: File) => {
@@ -135,32 +144,25 @@ export default function AdminPage() {
     finally { setIsSubmitting(false); }
   };
 
-  // 🆕 دالة الحفظ المحدثة (تفرق بين الإضافة والتعديل)
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productData.image) return alert("يرجى رفع صورة رئيسية");
     setIsSubmitting(true);
-
     const dataToSave = {
       name: productData.name, price: parseFloat(productData.price), category: productData.category,
       description: productData.description, image: productData.image, images: productData.images,
-      videos: productData.videos, colors: productData.colors, sizes: productData.sizes,
-      brand: "هبة الرحمن"
+      videos: productData.videos, colors: productData.colors, sizes: productData.sizes, brand: "هبة الرحمن"
     };
-
     let error;
     if (editingId) {
-      // وضع التعديل (Update)
       const res = await supabase.from('products').update(dataToSave).eq('id', editingId);
       error = res.error;
     } else {
-      // وضع الإضافة (Insert)
       const res = await supabase.from('products').insert([{ ...dataToSave, inStock: true, rating: 5.0 }]);
       error = res.error;
     }
-
     if (!error) {
-      showNotification(editingId ? "✅ تم تعديل المنتج بنجاح" : "✨ تمت إضافة المنتج بنجاح");
+      showNotification(editingId ? "✅ تم تعديل المنتج" : "✨ تمت إضافة المنتج");
       setShowAddProduct(false);
       setEditingId(null);
       fetchData();
@@ -225,6 +227,8 @@ export default function AdminPage() {
               <div className="glass-card p-4 md:p-6 border-white/5 text-right"><ShoppingCart className="text-luxury-beige mb-2 mr-auto" size={20} /><p className="text-[10px] uppercase opacity-40">الطلبات</p><h2 className="text-lg md:text-3xl font-serif font-bold">{dbOrders.length}</h2></div>
               <div className="glass-card p-4 md:p-6 border-white/5 text-right col-span-2 lg:col-span-1"><Package className="text-luxury-beige mb-2 mr-auto" size={20} /><p className="text-[10px] uppercase opacity-40">المنتجات</p><h2 className="text-lg md:text-3xl font-serif font-bold">{dbProducts.length}</h2></div>
             </div>
+
+            {/* أكواد الخصم */}
             <div className="glass-card p-4 md:p-6 border-luxury-beige/10 text-right">
               <div className="flex items-center justify-end gap-2 mb-4"><h2 className="font-serif text-lg">أكواد الخصم</h2><Tag size={18} className="text-luxury-beige" /></div>
               <div className="flex flex-col sm:flex-row-reverse gap-2 mb-4">
@@ -236,10 +240,31 @@ export default function AdminPage() {
                 {promoCodes.map(p => (<div key={p.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center gap-2 text-xs"><button onClick={() => deletePromo(p.id)} className="text-red-400"><X size={14}/></button><span className="opacity-40">({p.discount_percentage}%)</span><span className="font-bold text-luxury-beige">{p.code}</span></div>))}
               </div>
             </div>
+
+            {/* 🗺️ قسم إدارة مدن التوصيل الجديد */}
+            <div className="glass-card p-4 md:p-6 border-luxury-beige/10 text-right">
+              <div className="flex items-center justify-end gap-2 mb-4"><h2 className="font-serif text-lg">مدن التوصيل وأسعارها</h2><MapPin size={18} className="text-luxury-beige" /></div>
+              <div className="flex flex-col sm:flex-row-reverse gap-2 mb-4">
+                <input placeholder="اسم المدينة" className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right text-sm" value={newCity.name} onChange={e => setNewCity({...newCity, name: e.target.value})} />
+                <input type="number" placeholder="السعر (0=مجاني)" className="bg-dark-800 p-3 rounded-xl w-full sm:w-40 border border-white/5 outline-none text-center text-sm" value={newCity.cost} onChange={e => setNewCity({...newCity, cost: e.target.value})} />
+                <button onClick={handleAddCity} className="btn-primary px-6 py-3 rounded-xl text-sm font-bold">إضافة</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {dbCities.map(c => (
+                  <div key={c.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center justify-between gap-2 text-xs">
+                    <button onClick={() => deleteCity(c.id)} className="text-red-400"><X size={14}/></button>
+                    <div className="text-right">
+                      <span className="font-bold text-luxury-cream block">{c.name}</span>
+                      <span className={`text-[10px] ${c.shipping_cost === 0 ? 'text-green-400' : 'text-luxury-beige'}`}>{c.shipping_cost === 0 ? "مجاني" : `${c.shipping_cost} د.ل`}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* PRODUCTS - تمت إضافة زر التعديل هنا */}
+        {/* PRODUCTS */}
         {activeTab === "products" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center flex-row-reverse">
@@ -298,7 +323,7 @@ export default function AdminPage() {
         {navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-20 transition-colors ${activeTab === item.id ? "text-luxury-beige" : "text-white/40"}`}><item.icon size={22} /><span className="text-[10px]">{item.label}</span></button>))}
       </div>
 
-      {/* MODAL (يعمل للإضافة والتعديل) */}
+      {/* MODAL */}
       <AnimatePresence>
         {showAddProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/95 backdrop-blur-xl">

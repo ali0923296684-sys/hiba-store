@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // أضفنا useEffect
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Truck, Check, Lock, 
@@ -19,16 +19,6 @@ function getCartItemKey(item: { id: number; selectedColor?: string; selectedSize
   return `${item.id}-${item.selectedColor || 'default'}-${item.selectedSize || 'default'}`;
 }
 
-// 🚚 إعدادات التوصيل
-const freeShippingCities = ["صرمان", "صبراتة"]; // المدن المجانية
-const DELIVERY_FEE = 25; // رسوم باقي المدن
-
-const libyanCities = [
-  "طرابلس", "سوق الجمعة", "عين زارة", "أبو سليم", "حي الأندلس", "تاجوراء", "جنزور", "السواني بن آدم", "قصر بن غشير", 
-  "الزاوية", "صبراتة", "صرمان", "العجيلات", "الجميل", "زوارة", "الخمس", "زليتن", "مصراتة", "بني وليد", "ترهونة", "غريان", 
-  "بنغازي", "المرج", "البيضاء", "شحات", "درنة", "طبرق", "أجدابيا", "سرت", "سبها", "الكفرة", "أوباري", "غات"
-].sort();
-
 export default function CheckoutPage() {
   const { items, totalPrice, totalItems, removeFromCart, updateQuantity, clearCart } = useCart();
   const [step, setStep] = useState<CheckoutStep>("cart");
@@ -38,15 +28,30 @@ export default function CheckoutPage() {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [promoMessage, setPromoMessage] = useState({ text: "", type: "" });
   const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+  
+  const [dbCities, setDbCities] = useState<any[]>([]); // 🗺️ حالة المدن المجلوبة
 
   const [formData, setFormData] = useState({
-    fullName: "", phone: "", address: "", city: "طرابلس",
+    fullName: "", phone: "", address: "", city: "",
   });
   const [orderNumber, setOrderNumber] = useState("");
 
-  // 🧮 حساب الأسعار (مع التوصيل)
+  // 🗺️ جلب المدن من قاعدة البيانات عند فتح الصفحة
+  useEffect(() => {
+    async function fetchCities() {
+      const { data } = await supabase.from('cities').select('*').order('shipping_cost');
+      if (data && data.length > 0) {
+        setDbCities(data);
+        setFormData(prev => ({ ...prev, city: data[0].name })); // تعيين أول مدينة كافتراضية
+      }
+    }
+    fetchCities();
+  }, []);
+
+  // 🧮 حساب الأسعار (يبحث عن سعر المدينة في قاعدة البيانات)
   const priceAfterDiscount = totalPrice - (totalPrice * discountPercent) / 100;
-  const shippingCost = freeShippingCities.includes(formData.city) ? 0 : DELIVERY_FEE;
+  const currentCityData = dbCities.find(c => c.name === formData.city);
+  const shippingCost = currentCityData ? currentCityData.shipping_cost : 0;
   const finalPrice = priceAfterDiscount + shippingCost;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -215,10 +220,12 @@ export default function CheckoutPage() {
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs uppercase opacity-40">المدينة *</label>
+                        {/* 🗺️ القائمة الآن تقرأ من قاعدة البيانات */}
                         <select name="city" value={formData.city} className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 outline-none" onChange={handleInputChange}>
-                            {libyanCities.map(city => (
-                              <option key={city} value={city}>
-                                {city} {freeShippingCities.includes(city) ? "(توصيل مجاني 🎉)" : `(توصيل ${DELIVERY_FEE} د.ل)`}
+                            {dbCities.length === 0 && <option>جاري تحميل المدن...</option>}
+                            {dbCities.map(city => (
+                              <option key={city.id} value={city.name}>
+                                {city.name} {city.shipping_cost === 0 ? "(توصيل مجاني 🎉)" : `(توصيل ${city.shipping_cost} د.ل)`}
                               </option>
                             ))}
                         </select>
@@ -229,10 +236,10 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* 🚚 تنبيه التوصيل */}
+                  {/* تنبيه التوصيل */}
                   <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-bold ${shippingCost === 0 ? 'bg-green-500/10 text-green-400' : 'bg-luxury-beige/10 text-luxury-beige'}`}>
                     <Truck className="w-5 h-5" />
-                    {shippingCost === 0 ? `🎉 رائع! التوصيل مجاني إلى ${formData.city}` : `رسوم التوصيل إلى ${formData.city} هي ${DELIVERY_FEE} د.ل`}
+                    {shippingCost === 0 ? `🎉 رائع! التوصيل مجاني إلى ${formData.city}` : `رسوم التوصيل إلى ${formData.city} هي ${shippingCost} د.ل`}
                   </div>
 
                   <button onClick={handleCompleteOrder} disabled={isSubmitting} className="btn-primary w-full py-4 md:py-5 text-lg md:text-xl flex items-center justify-center gap-3 !bg-green-600 hover:!bg-green-700 !text-white">
@@ -243,7 +250,7 @@ export default function CheckoutPage() {
             </AnimatePresence>
           </div>
 
-          {/* ملخص الطلب مع تفاصيل التوصيل */}
+          {/* ملخص الطلب */}
           <div className="lg:col-span-1">
             <div className="glass-card p-6 md:p-8 lg:sticky lg:top-28 border-luxury-beige/10">
               <h3 className="font-serif text-lg md:text-xl mb-6 text-right">ملخص الحقيبة</h3>
@@ -257,7 +264,7 @@ export default function CheckoutPage() {
                 {promoMessage.text && <p className={`text-[10px] mt-2 text-right ${promoMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{promoMessage.text}</p>}
               </div>
 
-              {/* 🧮 تفاصيل الحساب */}
+              {/* تفاصيل الحساب */}
               <div className="border-t border-white/5 pt-4 space-y-3 text-sm">
                 <div className="flex justify-between opacity-60">
                   <span>{formatPrice(totalPrice)}</span>

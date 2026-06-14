@@ -21,22 +21,30 @@
 
   * {
     @apply border-dark-700;
+    -webkit-tap-highlight-color: transparent; /* إزالة وميض اللمس الأزرق في الجوال */
   }
 
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%; /* منع تكبير النص في الآيفون */
+    overflow-x: hidden; /* منع التمرير الجانبي */
   }
 
   body {
     @apply bg-[#050505] text-luxury-cream antialiased;
     direction: rtl;
     cursor: default;
+    overflow-x: hidden; /* 🛑 الأهم: منع أي تمرير أفقي مزعج في الجوال */
+    width: 100%;
+    position: relative;
+    -webkit-overflow-scrolling: touch; /* تمرير سلس كالحرير في الآيفون */
   }
 
   ::selection {
     @apply bg-luxury-beige text-luxury-dark;
   }
 
+  /* شريط تمرير رفيع وأنيق */
   ::-webkit-scrollbar {
     width: 6px;
   }
@@ -160,6 +168,7 @@
     opacity: 1;
   }
 
+  /* تحسين الهوامش لتكون أصغر في الجوال */
   .section-padding {
     @apply px-4 sm:px-6 lg:px-8 xl:px-16 2xl:px-24;
   }
@@ -178,6 +187,15 @@
       rgba(201, 169, 110, 0.06),
       transparent 40%
     );
+  }
+
+  /* إخفاء شريط التمرير في القوائم الأفقية (مثل معرض الصور) */
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .custom-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 

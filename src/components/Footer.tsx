@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Crown, Instagram, Facebook, Phone, Mail, MapPin, ArrowUpRight, Heart, MessageCircle } from "lucide-react";
+import { Crown, Instagram, Facebook, Phone, MapPin, Heart } from "lucide-react";
 
 export default function Footer() {
   
@@ -34,37 +34,39 @@ export default function Footer() {
       </div>
 
       <div className="relative bg-[#080808]">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-luxury-beige/[0.02] rounded-full blur-[150px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[800px] h-[200px] md:h-[300px] bg-luxury-beige/[0.02] rounded-full blur-[150px]" />
 
-        <div className="relative max-w-[1500px] mx-auto section-padding py-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 text-right" dir="rtl">
+        <div className="relative max-w-[1500px] mx-auto section-padding py-14 md:py-20">
+          {/* في الجوال يكون كل شيء في المنتصف، وفي الكمبيوتر يكون لليمين */}
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-8 text-center md:text-right" dir="rtl">
             
-            {/* Brand */}
+            {/* Brand (يأخذ عرض كامل في الجوال) */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-1"
+              className="col-span-2 lg:col-span-1 flex flex-col items-center md:items-start"
             >
-              <div className="flex items-center justify-start gap-3 mb-8">
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-6">
                 <div className="relative">
-                  <Crown className="w-10 h-10 text-luxury-beige" />
+                  <Crown className="w-9 h-9 md:w-10 md:h-10 text-luxury-beige" />
                   <div className="absolute inset-0 blur-xl bg-luxury-beige/20" />
                 </div>
                 <div>
-                  <span className="font-serif text-2xl font-bold gold-gradient-text block">
+                  <span className="font-serif text-xl md:text-2xl font-bold gold-gradient-text block">
                     هبة الرحمن
                   </span>
-                  <span className="text-[10px] text-luxury-beige/40 tracking-[0.4em] uppercase font-medium">
+                  <span className="text-[9px] md:text-[10px] text-luxury-beige/40 tracking-[0.3em] uppercase font-medium">
                     Luxury Store
                   </span>
                 </div>
               </div>
-              <p className="text-luxury-cream/40 text-sm leading-relaxed mb-8">
+              <p className="text-luxury-cream/40 text-xs md:text-sm leading-relaxed mb-6 max-w-xs">
                 وجهتكِ الأولى للتسوق الفاخر. نقدم لكِ أرقى المنتجات بجودة استثنائية وتجربة تليق بكِ.
               </p>
               
-              <div className="flex justify-start gap-3">
+              {/* أيقونات التواصل */}
+              <div className="flex justify-center md:justify-start gap-3">
                 {socialLinks.map((social) => (
                   <motion.a
                     key={social.label}
@@ -73,7 +75,7 @@ export default function Footer() {
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.15, y: -3 }}
                     whileTap={{ scale: 0.9 }}
-                    className="w-11 h-11 rounded-xl bg-dark-800/50 flex items-center justify-center text-luxury-beige hover:text-luxury-gold transition-all duration-300 border border-luxury-beige/5 hover:border-luxury-beige/20"
+                    className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-dark-800/50 flex items-center justify-center text-luxury-beige hover:text-luxury-gold transition-all duration-300 border border-luxury-beige/5 hover:border-luxury-beige/20"
                   >
                     {social.icon}
                   </motion.a>
@@ -88,20 +90,20 @@ export default function Footer() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <h4 className="font-serif text-lg font-bold text-luxury-cream mb-8 relative inline-block">
+              <h4 className="font-serif text-base md:text-lg font-bold text-luxury-cream mb-5 md:mb-8">
                 روابط سريعة
-                <span className="absolute -bottom-2 right-0 w-8 h-0.5 bg-gradient-to-l from-luxury-beige to-transparent" />
               </h4>
-              <ul className="space-y-4">
-                {["الرئيسية", "المنتجات", "الأخبار", "من نحن"].map((link) => (
-                  <li key={link}>
-                    <motion.a
-                      href={link === "الرئيسية" ? "/" : "#products"}
-                      whileHover={{ x: -5 }}
-                      className="text-luxury-cream/40 hover:text-luxury-beige transition-all duration-300 text-sm block"
-                    >
-                      {link}
-                    </motion.a>
+              <ul className="space-y-3 md:space-y-4">
+                {[
+                  { name: "الرئيسية", href: "/" },
+                  { name: "المنتجات", href: "/#products" },
+                  { name: "تتبع طلبك", href: "/track" },
+                  { name: "من نحن", href: "/#about" },
+                ].map((link) => (
+                  <li key={link.name}>
+                    <a href={link.href} className="text-luxury-cream/40 hover:text-luxury-beige transition-all duration-300 text-xs md:text-sm block">
+                      {link.name}
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -114,53 +116,46 @@ export default function Footer() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <h4 className="font-serif text-lg font-bold text-luxury-cream mb-8 relative inline-block">
+              <h4 className="font-serif text-base md:text-lg font-bold text-luxury-cream mb-5 md:mb-8">
                 الفئات
-                <span className="absolute -bottom-2 right-0 w-8 h-0.5 bg-gradient-to-l from-luxury-beige to-transparent" />
               </h4>
-              <ul className="space-y-4">
-                {["عطور فاخرة", "حقائب يد", "مجوهرات", "ساعات", "إكسسوارات"].map(
-                  (cat) => (
-                    <li key={cat}>
-                      <motion.a
-                        href="#products"
-                        whileHover={{ x: -5 }}
-                        className="text-luxury-cream/40 hover:text-luxury-beige transition-all duration-300 text-sm block"
-                      >
-                        {cat}
-                      </motion.a>
-                    </li>
-                  )
-                )}
+              <ul className="space-y-3 md:space-y-4">
+                {["عطور فاخرة", "حقائب يد", "مجوهرات", "إكسسوارات"].map((cat) => (
+                  <li key={cat}>
+                    <a href="/#categories" className="text-luxury-cream/40 hover:text-luxury-beige transition-all duration-300 text-xs md:text-sm block">
+                      {cat}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </motion.div>
 
-            {/* Contact */}
+            {/* Contact (يأخذ عرض كامل في الجوال) */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
+              className="col-span-2 lg:col-span-1 flex flex-col items-center md:items-start"
             >
-              <h4 className="font-serif text-lg font-bold text-luxury-cream mb-8 relative inline-block">
+              <h4 className="font-serif text-base md:text-lg font-bold text-luxury-cream mb-5 md:mb-8">
                 تواصل معنا
-                <span className="absolute -bottom-2 right-0 w-8 h-0.5 bg-gradient-to-l from-luxury-beige to-transparent" />
               </h4>
-              <ul className="space-y-5">
-                <li className="flex items-center justify-start gap-4">
+              <ul className="space-y-4">
+                <li className="flex items-center justify-center md:justify-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-luxury-beige/5 flex items-center justify-center shrink-0">
                     <Phone className="w-4 h-4 text-luxury-beige/60" />
                   </div>
-                  <div>
+                  <div className="text-right">
                     <p className="text-luxury-cream/30 text-[10px] mb-0.5">واتساب / هاتف</p>
                     <span className="text-luxury-cream/60 text-sm" dir="ltr">+218 93 147 3373</span>
                   </div>
                 </li>
-                <li className="flex items-center justify-start gap-4">
+                <li className="flex items-center justify-center md:justify-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-luxury-beige/5 flex items-center justify-center shrink-0">
                     <MapPin className="w-4 h-4 text-luxury-beige/60" />
                   </div>
-                  <div>
+                  <div className="text-right">
                     <p className="text-luxury-cream/30 text-[10px] mb-0.5">الموقع</p>
                     <span className="text-luxury-cream/60 text-sm">ليبيا - طرابلس</span>
                   </div>
@@ -170,12 +165,13 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* الشريط السفلي */}
         <div className="border-t border-luxury-beige/5">
-          <div className="max-w-[1500px] mx-auto section-padding py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-luxury-cream/25 text-sm">
+          <div className="max-w-[1500px] mx-auto section-padding py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-luxury-cream/25 text-xs md:text-sm text-center">
               © 2026 هبة الرحمن. جميع الحقوق محفوظة.
             </p>
-            <p className="text-luxury-cream/25 text-sm flex items-center gap-1.5">
+            <p className="text-luxury-cream/25 text-xs md:text-sm flex items-center gap-1.5">
               صُنع بـ <Heart className="w-3.5 h-3.5 text-red-400/60 fill-red-400/60" /> في ليبيا
             </p>
           </div>

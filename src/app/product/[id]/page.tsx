@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Star, ShoppingCart, Check, ChevronLeft,
+  ShoppingCart, Check, ChevronLeft,
   Truck, Shield, RotateCcw, Play, 
   Loader2, Video
 } from "lucide-react";
@@ -31,11 +31,9 @@ export default function ProductDetail() {
     async function getProductData() {
       try {
         setLoading(true);
+        window.scrollTo(0, 0); // العودة لأعلى الصفحة عند فتح منتج جديد
         const { data: mainProduct, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', params.id)
-          .single();
+          .from('products').select('*').eq('id', params.id).single();
 
         if (error) throw error;
         if (mainProduct) {
@@ -45,12 +43,7 @@ export default function ProductDetail() {
           setSelectedMedia({ type: 'image', url: mainProduct.image, index: 0 });
 
           const { data: related } = await supabase
-            .from('products')
-            .select('*')
-            .eq('category', mainProduct.category)
-            .neq('id', mainProduct.id)
-            .limit(4);
-          
+            .from('products').select('*').eq('category', mainProduct.category).neq('id', mainProduct.id).limit(4);
           if (related) setRelatedProducts(related);
         }
       } catch (err) {
@@ -66,7 +59,6 @@ export default function ProductDetail() {
     if (!product) return;
     addToCart({ ...product, selectedColor, selectedSize });
     setAddedToCart(true);
-    // نفتح سلة التسوق تلقائياً ليشاهد الزبون المنتج ويذهب للدفع
     setTimeout(() => {
         setAddedToCart(false);
         setIsCartOpen(true);
@@ -82,134 +74,123 @@ export default function ProductDetail() {
     );
   }
 
-  if (!product) return <div className="text-center py-20 text-luxury-cream">المنتج غير موجود</div>;
+  if (!product) return <div className="text-center py-40 text-luxury-cream">المنتج غير موجود</div>;
+
+  const allImages = product.images && product.images.length > 0 ? product.images : [product.image];
 
   return (
     <div className="min-h-screen bg-[#050505] text-luxury-cream">
-      <div className="pt-28 pb-20 section-padding max-w-[1500px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+      <div className="pt-24 md:pt-28 pb-20 section-padding max-w-[1500px] mx-auto">
+        
+        {/* مسار التنقل */}
+        <div className="flex items-center gap-2 text-xs md:text-sm text-luxury-cream/40 mb-6">
+          <Link href="/" className="hover:text-luxury-beige">الرئيسية</Link>
+          <ChevronLeft className="w-3 h-3" />
+          <span className="text-luxury-beige line-clamp-1">{product.name}</span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
           
-          {/* الجانب الأيسر: المعرض */}
-          <div className="space-y-4">
-            <div className="relative aspect-square rounded-3xl overflow-hidden glass-card bg-dark-900">
+          {/* المعرض */}
+          <div className="space-y-3 md:space-y-4">
+            <div className="relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden glass-card bg-dark-900">
               <AnimatePresence mode="wait">
                 {selectedMedia.type === 'video' ? (
-                  <motion.video
-                    key={selectedMedia.url}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    src={selectedMedia.url}
-                    controls
-                    autoPlay
-                    className="w-full h-full object-contain"
-                  />
+                  <motion.video key={selectedMedia.url} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} src={selectedMedia.url} controls autoPlay playsInline className="w-full h-full object-contain bg-black" />
                 ) : (
-                  <motion.img
-                    key={selectedMedia.url}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    src={selectedMedia.url}
-                    className="w-full h-full object-cover"
-                  />
+                  <motion.img key={selectedMedia.url} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} src={selectedMedia.url} className="w-full h-full object-cover" />
                 )}
               </AnimatePresence>
             </div>
             
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {product.images?.map((img, i) => (
-                <button 
-                  key={`img-${i}`}
-                  onClick={() => setSelectedMedia({ type: 'image', url: img, index: i })}
-                  className={`w-20 h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${selectedMedia.url === img ? "border-luxury-beige shadow-lg" : "border-transparent opacity-50"}`}
-                >
+            {/* المصغرات */}
+            <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 custom-scrollbar">
+              {allImages.map((img, i) => (
+                <button key={`img-${i}`} onClick={() => setSelectedMedia({ type: 'image', url: img, index: i })} className={`w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${selectedMedia.url === img ? "border-luxury-beige" : "border-transparent opacity-50"}`}>
                   <img src={img} className="w-full h-full object-cover" />
                 </button>
               ))}
-              
               {product.videos?.map((vid, i) => (
-                <button 
-                  key={`vid-${i}`}
-                  onClick={() => setSelectedMedia({ type: 'video', url: vid, index: i })}
-                  className={`w-20 h-20 rounded-xl overflow-hidden border-2 shrink-0 bg-dark-800 flex items-center justify-center relative transition-all ${selectedMedia.url === vid ? "border-luxury-beige shadow-lg" : "border-transparent opacity-50"}`}
-                >
-                  <Video className="w-6 h-6 text-luxury-beige" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <Play className="w-5 h-5 text-white fill-white" />
-                  </div>
+                <button key={`vid-${i}`} onClick={() => setSelectedMedia({ type: 'video', url: vid, index: i })} className={`w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 shrink-0 bg-dark-800 flex items-center justify-center relative ${selectedMedia.url === vid ? "border-luxury-beige" : "border-transparent opacity-50"}`}>
+                  <Video className="w-6 h-6 text-luxury-beige/50" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40"><Play className="w-5 h-5 text-white fill-white" /></div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* الجانب الأيمن: المعلومات */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 text-luxury-beige text-sm tracking-widest uppercase">
-              <span className="w-8 h-px bg-luxury-beige/30"></span>
-              {product.category}
-            </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-bold italic">{product.name}</h1>
+          {/* المعلومات */}
+          <div className="space-y-4 md:space-y-6">
+            <span className="text-luxury-beige text-xs md:text-sm tracking-widest uppercase">{product.category}</span>
+            <h1 className="font-serif text-3xl md:text-5xl font-bold leading-tight">{product.name}</h1>
             
             <div className="flex items-baseline gap-4">
-              <span className="font-serif text-4xl font-bold gold-gradient-text">{formatPrice(product.price)}</span>
+              <span className="font-serif text-3xl md:text-4xl font-bold gold-gradient-text">{formatPrice(product.price)}</span>
             </div>
 
-            <p className="text-luxury-cream/60 leading-relaxed text-lg">{product.description}</p>
+            <p className="text-luxury-cream/60 leading-relaxed text-sm md:text-lg">{product.description}</p>
 
             {/* الألوان والمقاسات */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+            <div className="space-y-4 py-2">
                 {product.colors && product.colors.length > 0 && (
                     <div className="space-y-3">
-                        <p className="text-xs uppercase tracking-widest opacity-40">اللون المختار: {selectedColor}</p>
+                        <p className="text-xs uppercase tracking-widest opacity-40">اللون: <span className="text-luxury-beige">{selectedColor}</span></p>
                         <div className="flex flex-wrap gap-2">
                             {product.colors.map(c => (
-                                <button key={c} onClick={() => setSelectedColor(c)} className={`px-4 py-2 rounded-xl border text-sm transition-all ${selectedColor === c ? 'border-luxury-beige bg-luxury-beige text-dark-900 font-bold' : 'border-white/10 hover:border-white/30'}`}>{c}</button>
+                                <button key={c} onClick={() => setSelectedColor(c)} className={`px-4 py-2 rounded-xl border text-sm transition-all ${selectedColor === c ? 'border-luxury-beige bg-luxury-beige text-dark-900 font-bold' : 'border-white/10'}`}>{c}</button>
                             ))}
                         </div>
                     </div>
                 )}
                 {product.sizes && product.sizes.length > 0 && (
                     <div className="space-y-3">
-                        <p className="text-xs uppercase tracking-widest opacity-40">المقاس المختار: {selectedSize}</p>
+                        <p className="text-xs uppercase tracking-widest opacity-40">المقاس: <span className="text-luxury-beige">{selectedSize}</span></p>
                         <div className="flex flex-wrap gap-2">
                             {product.sizes.map(s => (
-                                <button key={s} onClick={() => setSelectedSize(s)} className={`px-4 py-2 rounded-xl border text-sm transition-all ${selectedSize === s ? 'border-luxury-beige bg-luxury-beige text-dark-900 font-bold' : 'border-white/10 hover:border-white/30'}`}>{s}</button>
+                                <button key={s} onClick={() => setSelectedSize(s)} className={`min-w-[44px] px-3 py-2 rounded-xl border text-sm transition-all ${selectedSize === s ? 'border-luxury-beige bg-luxury-beige text-dark-900 font-bold' : 'border-white/10'}`}>{s}</button>
                             ))}
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="pt-6">
-              <button 
-                onClick={handleAddToCart}
-                disabled={addedToCart}
-                className={`w-full py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${addedToCart ? "bg-green-600 shadow-green-900/20" : "bg-luxury-beige text-dark-900 hover:bg-luxury-gold shadow-luxury-beige/20"}`}
-              >
-                {addedToCart ? <Check size={24} /> : <ShoppingCart size={24} />}
-                {addedToCart ? "تمت الإضافة للحقيبة" : "أضيفي للحقيبة الآن"}
+            {/* زر الإضافة */}
+            <div className="pt-4">
+              <button onClick={handleAddToCart} disabled={addedToCart} className={`w-full py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${addedToCart ? "bg-green-600" : "bg-luxury-beige text-dark-900 hover:bg-luxury-gold"}`}>
+                {addedToCart ? <Check size={22} /> : <ShoppingCart size={22} />}
+                {addedToCart ? "تمت الإضافة" : "أضيفي للحقيبة الآن"}
               </button>
             </div>
 
             {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-4 pt-10 border-t border-white/5">
-                <div className="text-center">
-                    <Truck className="mx-auto mb-2 text-luxury-beige/60" size={20} />
-                    <span className="text-[10px] uppercase opacity-40 tracking-tighter">توصيل سريع</span>
-                </div>
-                <div className="text-center">
-                    <Shield className="mx-auto mb-2 text-luxury-beige/60" size={20} />
-                    <span className="text-[10px] uppercase opacity-40 tracking-tighter">أصلي 100%</span>
-                </div>
-                <div className="text-center">
-                    <RotateCcw className="mx-auto mb-2 text-luxury-beige/60" size={20} />
-                    <span className="text-[10px] uppercase opacity-40 tracking-tighter">إرجاع سهل</span>
-                </div>
+            <div className="grid grid-cols-3 gap-4 pt-8 border-t border-white/5">
+                <div className="text-center"><Truck className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">توصيل سريع</span></div>
+                <div className="text-center"><Shield className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">أصلي 100%</span></div>
+                <div className="text-center"><RotateCcw className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">إرجاع سهل</span></div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* قسم المنتجات المشابهة */}
+      {relatedProducts.length > 0 && (
+        <div className="bg-white/[0.02] py-16 md:py-20 border-t border-white/5">
+          <div className="section-padding max-w-[1500px] mx-auto">
+            <h3 className="font-serif text-2xl md:text-3xl mb-8 md:mb-12 text-center">أكملي <span className="gold-gradient-text">أناقتكِ</span></h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+              {relatedProducts.map(item => (
+                <Link key={item.id} href={`/product/${item.id}`} className="glass-card-hover p-3 md:p-4 block group">
+                  <div className="aspect-square rounded-xl overflow-hidden mb-3 bg-dark-800">
+                    <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  </div>
+                  <h4 className="font-semibold text-xs md:text-sm mb-1 line-clamp-1">{item.name}</h4>
+                  <p className="gold-gradient-text font-bold text-sm md:text-base">{formatPrice(item.price)}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

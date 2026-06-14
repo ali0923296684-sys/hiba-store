@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, Check, ChevronLeft,
   Truck, Shield, RotateCcw, Play, 
-  Loader2, Video
+  Loader2, Video, AlertCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
@@ -24,6 +24,7 @@ export default function ProductDetail() {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [addedToCart, setAddedToCart] = useState(false);
+  const [showColorError, setShowColorError] = useState(false); // لتنبيه الزبون باختيار اللون
   
   const { addToCart, setIsCartOpen } = useCart();
 
@@ -31,15 +32,13 @@ export default function ProductDetail() {
     async function getProductData() {
       try {
         setLoading(true);
-        window.scrollTo(0, 0); // العودة لأعلى الصفحة عند فتح منتج جديد
+        window.scrollTo(0, 0);
         const { data: mainProduct, error } = await supabase
           .from('products').select('*').eq('id', params.id).single();
 
         if (error) throw error;
         if (mainProduct) {
           setProduct(mainProduct);
-          setSelectedColor(mainProduct.colors?.[0] || "");
-          setSelectedSize(mainProduct.sizes?.[0] || "");
           setSelectedMedia({ type: 'image', url: mainProduct.image, index: 0 });
 
           const { data: related } = await supabase
@@ -57,6 +56,15 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (!product) return;
+    
+    // إجبار الزبون على اختيار اللون إذا كان المنتج يحتوي على ألوان
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
+      setShowColorError(true);
+      // اهتزاز بسيط لتنبيه الزبون
+      setTimeout(() => setShowColorError(false), 2000);
+      return;
+    }
+
     addToCart({ ...product, selectedColor, selectedSize });
     setAddedToCart(true);
     setTimeout(() => {
@@ -103,7 +111,6 @@ export default function ProductDetail() {
               </AnimatePresence>
             </div>
             
-            {/* المصغرات */}
             <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 custom-scrollbar">
               {allImages.map((img, i) => (
                 <button key={`img-${i}`} onClick={() => setSelectedMedia({ type: 'image', url: img, index: i })} className={`w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${selectedMedia.url === img ? "border-luxury-beige" : "border-transparent opacity-50"}`}>
@@ -130,29 +137,56 @@ export default function ProductDetail() {
 
             <p className="text-luxury-cream/60 leading-relaxed text-sm md:text-lg">{product.description}</p>
 
-            {/* الألوان والمقاسات */}
-            <div className="space-y-4 py-2">
-                {product.colors && product.colors.length > 0 && (
-                    <div className="space-y-3">
-                        <p className="text-xs uppercase tracking-widest opacity-40">اللون: <span className="text-luxury-beige">{selectedColor}</span></p>
-                        <div className="flex flex-wrap gap-2">
-                            {product.colors.map(c => (
-                                <button key={c} onClick={() => setSelectedColor(c)} className={`px-4 py-2 rounded-xl border text-sm transition-all ${selectedColor === c ? 'border-luxury-beige bg-luxury-beige text-dark-900 font-bold' : 'border-white/10'}`}>{c}</button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                {product.sizes && product.sizes.length > 0 && (
-                    <div className="space-y-3">
-                        <p className="text-xs uppercase tracking-widest opacity-40">المقاس: <span className="text-luxury-beige">{selectedSize}</span></p>
-                        <div className="flex flex-wrap gap-2">
-                            {product.sizes.map(s => (
-                                <button key={s} onClick={() => setSelectedSize(s)} className={`min-w-[44px] px-3 py-2 rounded-xl border text-sm transition-all ${selectedSize === s ? 'border-luxury-beige bg-luxury-beige text-dark-900 font-bold' : 'border-white/10'}`}>{s}</button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
+            {/* 🎨 قسم اختيار الألوان المحدث */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="space-y-3 py-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium text-luxury-cream">
+                    اللون: <span className="text-luxury-beige font-bold">{selectedColor || "اختاري اللون"}</span>
+                  </p>
+                  {/* رسالة تنبيه عند نسيان اختيار اللون */}
+                  <AnimatePresence>
+                    {showColorError && (
+                      <motion.span 
+                        initial={{ opacity: 0, x: 10 }} 
+                        animate={{ opacity: 1, x: 0 }} 
+                        exit={{ opacity: 0 }}
+                        className="text-red-400 text-xs flex items-center gap-1"
+                      >
+                        <AlertCircle size={12} /> يرجى اختيار اللون
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {product.colors.map(c => (
+                    <button 
+                      key={c} 
+                      onClick={() => { setSelectedColor(c); setShowColorError(false); }} 
+                      className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-300 ${
+                        selectedColor === c 
+                        ? 'border-luxury-beige bg-luxury-beige text-dark-900 scale-105 shadow-lg shadow-luxury-beige/20' 
+                        : `border-white/10 hover:border-luxury-beige/50 text-luxury-cream/80 ${showColorError ? 'border-red-500/50 animate-pulse' : ''}`
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* المقاسات */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="space-y-3 py-2">
+                <p className="text-sm font-medium text-luxury-cream">المقاس: <span className="text-luxury-beige font-bold">{selectedSize || "اختاري المقاس"}</span></p>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map(s => (
+                    <button key={s} onClick={() => setSelectedSize(s)} className={`min-w-[48px] px-4 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${selectedSize === s ? 'border-luxury-beige bg-luxury-beige text-dark-900' : 'border-white/10 hover:border-luxury-beige/50'}`}>{s}</button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* زر الإضافة */}
             <div className="pt-4">
@@ -172,7 +206,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* قسم المنتجات المشابهة */}
+      {/* المنتجات المشابهة */}
       {relatedProducts.length > 0 && (
         <div className="bg-white/[0.02] py-16 md:py-20 border-t border-white/5">
           <div className="section-padding max-w-[1500px] mx-auto">

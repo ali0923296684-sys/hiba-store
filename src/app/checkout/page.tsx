@@ -19,6 +19,10 @@ function getCartItemKey(item: { id: number; selectedColor?: string; selectedSize
   return `${item.id}-${item.selectedColor || 'default'}-${item.selectedSize || 'default'}`;
 }
 
+// 🚚 إعدادات التوصيل
+const freeShippingCities = ["صرمان", "صبراتة"]; // المدن المجانية
+const DELIVERY_FEE = 25; // رسوم باقي المدن
+
 const libyanCities = [
   "طرابلس", "سوق الجمعة", "عين زارة", "أبو سليم", "حي الأندلس", "تاجوراء", "جنزور", "السواني بن آدم", "قصر بن غشير", 
   "الزاوية", "صبراتة", "صرمان", "العجيلات", "الجميل", "زوارة", "الخمس", "زليتن", "مصراتة", "بني وليد", "ترهونة", "غريان", 
@@ -40,7 +44,10 @@ export default function CheckoutPage() {
   });
   const [orderNumber, setOrderNumber] = useState("");
 
-  const finalPrice = totalPrice - (totalPrice * discountPercent) / 100;
+  // 🧮 حساب الأسعار (مع التوصيل)
+  const priceAfterDiscount = totalPrice - (totalPrice * discountPercent) / 100;
+  const shippingCost = freeShippingCities.includes(formData.city) ? 0 : DELIVERY_FEE;
+  const finalPrice = priceAfterDiscount + shippingCost;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -86,13 +93,12 @@ export default function CheckoutPage() {
         city: formData.city,
         total_amount: finalPrice,
         total_price: finalPrice,
-        notes: discountPercent > 0 ? `كود خصم: ${promoCode}` : "",
+        notes: `التوصيل: ${shippingCost === 0 ? 'مجاني' : shippingCost + ' د.ل'} ${discountPercent > 0 ? `| خصم: ${promoCode}` : ""}`,
         items: items, 
         status: 'جاري التجهيز'
       }]);
       if (error) throw error;
 
-      // 🎨 تجهيز قائمة المنتجات مع عرض اللون والمقاس
       const detailedItemsList = items.map((item) => {
         let line = `- ${item.name} (الكمية: ${item.quantity})`;
         if (item.selectedColor) line += ` - اللون: ${item.selectedColor}`;
@@ -103,12 +109,8 @@ export default function CheckoutPage() {
       // إرسال تلجرام
       const botToken = "8221648331:AAHQQT-1nEGbTHksAyAK5BVU4r8mqX61JOk";
       const chatId = "8459612624";
-      const telegramItems = items.map((item) => {
-        let line = `- ${item.name} (${item.quantity})`;
-        if (item.selectedColor) line += ` - اللون: ${item.selectedColor}`;
-        return line;
-      }).join("\n");
-      const telegramMessage = `🏛️ طلب جديد\n\nالاسم: ${formData.fullName}\nالهاتف: ${formData.phone}\nالمكان: ${formData.city} - ${formData.address}\n\nالطلبات:\n${telegramItems}\n\nالإجمالي: ${finalPrice} د.ل`;
+      const telegramItems = items.map((item) => `- ${item.name} (${item.quantity})${item.selectedColor ? ` - ${item.selectedColor}` : ''}`).join("\n");
+      const telegramMessage = `🏛️ طلب جديد\n\nالاسم: ${formData.fullName}\nالهاتف: ${formData.phone}\nالمكان: ${formData.city} - ${formData.address}\n\nالطلبات:\n${telegramItems}\n\nالتوصيل: ${shippingCost === 0 ? 'مجاني' : shippingCost + ' د.ل'}\nالإجمالي: ${finalPrice} د.ل`;
       fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: chatId, text: telegramMessage }),
@@ -121,6 +123,7 @@ export default function CheckoutPage() {
         `الهاتف: ${formData.phone}%0A` +
         `المكان: ${formData.city} - ${formData.address}%0A%0A` +
         `الطلبات:%0A${detailedItemsList}%0A%0A` +
+        `التوصيل: ${shippingCost === 0 ? "مجاني" : formatPrice(shippingCost)}%0A` +
         `الإجمالي: ${formatPrice(finalPrice)}`;
       window.open(`https://wa.me/218935364926?text=${whatsappMessage}`, "_blank");
 
@@ -163,10 +166,7 @@ export default function CheckoutPage() {
               {step === "cart" && (
                 <div className="space-y-4">
                   {items.length === 0 ? (
-                     <div className="glass-card p-12 text-center">
-                        <p className="text-luxury-cream/40 text-lg mb-4">الحقيبة فارغة</p>
-                        <Link href="/" className="btn-primary inline-block">تصفحي المنتجات</Link>
-                     </div>
+                     <div className="glass-card p-12 text-center"><p className="text-luxury-cream/40 text-lg mb-4">الحقيبة فارغة</p><Link href="/" className="btn-primary inline-block">تصفحي المنتجات</Link></div>
                   ) : (
                     <>
                       {items.map((item) => {
@@ -179,7 +179,6 @@ export default function CheckoutPage() {
                                 <h3 className="font-bold text-sm md:text-base">{item.name}</h3>
                                 <button onClick={() => removeFromCart(itemKey)} className="text-red-400/30 hover:text-red-400"><Trash2 size={18}/></button>
                               </div>
-                              {/* 🎨 عرض اللون والمقاس في السلة */}
                               <div className="text-xs text-luxury-cream/40 mb-3">
                                 {item.selectedColor && <span className="ml-2">اللون: <span className="text-luxury-beige">{item.selectedColor}</span></span>}
                                 {item.selectedSize && <span>المقاس: <span className="text-luxury-beige">{item.selectedSize}</span></span>}
@@ -217,7 +216,11 @@ export default function CheckoutPage() {
                     <div className="space-y-2">
                         <label className="text-xs uppercase opacity-40">المدينة *</label>
                         <select name="city" value={formData.city} className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 outline-none" onChange={handleInputChange}>
-                            {libyanCities.map(city => <option key={city} value={city}>{city}</option>)}
+                            {libyanCities.map(city => (
+                              <option key={city} value={city}>
+                                {city} {freeShippingCities.includes(city) ? "(توصيل مجاني 🎉)" : `(توصيل ${DELIVERY_FEE} د.ل)`}
+                              </option>
+                            ))}
                         </select>
                     </div>
                     <div className="space-y-2">
@@ -225,6 +228,13 @@ export default function CheckoutPage() {
                         <input type="text" name="address" required className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 focus:border-luxury-beige/40 outline-none" onChange={handleInputChange} />
                     </div>
                   </div>
+
+                  {/* 🚚 تنبيه التوصيل */}
+                  <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-bold ${shippingCost === 0 ? 'bg-green-500/10 text-green-400' : 'bg-luxury-beige/10 text-luxury-beige'}`}>
+                    <Truck className="w-5 h-5" />
+                    {shippingCost === 0 ? `🎉 رائع! التوصيل مجاني إلى ${formData.city}` : `رسوم التوصيل إلى ${formData.city} هي ${DELIVERY_FEE} د.ل`}
+                  </div>
+
                   <button onClick={handleCompleteOrder} disabled={isSubmitting} className="btn-primary w-full py-4 md:py-5 text-lg md:text-xl flex items-center justify-center gap-3 !bg-green-600 hover:!bg-green-700 !text-white">
                     {isSubmitting ? <Loader2 className="animate-spin" /> : <><MessageCircle /> تأكيد وإرسال الطلب</>}
                   </button>
@@ -233,10 +243,11 @@ export default function CheckoutPage() {
             </AnimatePresence>
           </div>
 
-          {/* ملخص الطلب */}
+          {/* ملخص الطلب مع تفاصيل التوصيل */}
           <div className="lg:col-span-1">
             <div className="glass-card p-6 md:p-8 lg:sticky lg:top-28 border-luxury-beige/10">
               <h3 className="font-serif text-lg md:text-xl mb-6 text-right">ملخص الحقيبة</h3>
+              
               <div className="py-4 border-t border-white/5">
                 <label className="text-xs opacity-40 mb-2 block text-right">لديكِ كود خصم؟</label>
                 <div className="flex gap-2">
@@ -245,9 +256,27 @@ export default function CheckoutPage() {
                 </div>
                 {promoMessage.text && <p className={`text-[10px] mt-2 text-right ${promoMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{promoMessage.text}</p>}
               </div>
-              <div className="flex justify-between items-end border-t border-white/5 pt-6">
-                <span className="font-bold">الإجمالي</span>
-                <span className="text-2xl md:text-3xl font-serif gold-gradient-text">{formatPrice(finalPrice)}</span>
+
+              {/* 🧮 تفاصيل الحساب */}
+              <div className="border-t border-white/5 pt-4 space-y-3 text-sm">
+                <div className="flex justify-between opacity-60">
+                  <span>{formatPrice(totalPrice)}</span>
+                  <span>المنتجات</span>
+                </div>
+                {discountPercent > 0 && (
+                  <div className="flex justify-between text-green-400">
+                    <span>- {formatPrice(totalPrice * discountPercent / 100)}</span>
+                    <span>الخصم ({discountPercent}%)</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className={shippingCost === 0 ? "text-green-400 font-bold" : "opacity-60"}>{shippingCost === 0 ? "مجاني 🎉" : formatPrice(shippingCost)}</span>
+                  <span className="opacity-60">التوصيل</span>
+                </div>
+                <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-2">
+                  <span className="text-2xl md:text-3xl font-serif gold-gradient-text">{formatPrice(finalPrice)}</span>
+                  <span className="font-bold text-lg">الإجمالي</span>
+                </div>
               </div>
             </div>
           </div>

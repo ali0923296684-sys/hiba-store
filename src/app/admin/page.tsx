@@ -14,6 +14,24 @@ import { formatPrice } from "@/lib/utils";
 
 type AdminTab = "dashboard" | "products" | "orders";
 
+// 🎨 قائمة الألوان الجاهزة للاختيار منها (مع أكوادها لعرضها بصرياً)
+const availableColors = [
+  { name: "ذهبي", code: "#D4AF37" },
+  { name: "فضي", code: "#C0C0C0" },
+  { name: "أسود", code: "#1a1a1a" },
+  { name: "أبيض", code: "#FFFFFF" },
+  { name: "وردي", code: "#FFC0CB" },
+  { name: "أحمر", code: "#DC2626" },
+  { name: "أزرق", code: "#2563EB" },
+  { name: "أخضر", code: "#16A34A" },
+  { name: "بني", code: "#8B4513" },
+  { name: "بيج", code: "#E8D5A3" },
+  { name: "رصاصي", code: "#71717A" },
+  { name: "نحاسي", code: "#B87333" },
+];
+
+const availableSizes = ["S", "M", "L", "XL", "36", "37", "38", "39", "40", "41", "42"];
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,10 +46,11 @@ export default function AdminPage() {
   const [notification, setNotification] = useState("");
   
   const [newPromo, setNewPromo] = useState({ code: "", discount: "" });
-  // 🎨 أضفنا colors و sizes هنا
+  // الآن colors و sizes أصبحتا قوائم (Arrays) مباشرة
   const [productData, setProductData] = useState({
     name: "", price: "", category: "إكسسوارات", description: "", image: "", 
-    images: [] as string[], videos: [] as string[], colors: "", sizes: ""
+    images: [] as string[], videos: [] as string[], 
+    colors: [] as string[], sizes: [] as string[]
   });
 
   const categories = ["عطور فاخرة", "حقائب يد", "مجوهرات", "ساعات فاخرة", "أحذية فاخرة", "إكسسوارات"];
@@ -51,16 +70,30 @@ export default function AdminPage() {
     if (isAuthenticated) fetchData();
   }, [isAuthenticated, fetchData]);
 
+  // دالة لإضافة/إزالة اللون عند الضغط عليه
+  const toggleColor = (colorName: string) => {
+    setProductData(prev => ({
+      ...prev,
+      colors: prev.colors.includes(colorName) 
+        ? prev.colors.filter(c => c !== colorName) 
+        : [...prev.colors, colorName]
+    }));
+  };
+
+  // دالة لإضافة/إزالة المقاس
+  const toggleSize = (size: string) => {
+    setProductData(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(size) 
+        ? prev.sizes.filter(s => s !== size) 
+        : [...prev.sizes, size]
+    }));
+  };
+
   const handleAddPromo = async () => {
     if (!newPromo.code || !newPromo.discount) return;
-    const { error } = await supabase.from('promo_codes').insert([{ 
-      code: newPromo.code.toUpperCase(), discount_percentage: parseInt(newPromo.discount), is_active: true
-    }]);
-    if (!error) {
-      showNotification("✅ تم إضافة كود الخصم");
-      setNewPromo({ code: "", discount: "" });
-      fetchData();
-    }
+    const { error } = await supabase.from('promo_codes').insert([{ code: newPromo.code.toUpperCase(), discount_percentage: parseInt(newPromo.discount), is_active: true }]);
+    if (!error) { showNotification("✅ تم إضافة كود الخصم"); setNewPromo({ code: "", discount: "" }); fetchData(); }
   };
 
   const deletePromo = async (id: number) => {
@@ -76,8 +109,8 @@ export default function AdminPage() {
 
   const uploadFile = async (file: File) => {
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${file.name.split('.').pop()}`;
-    const { error: uploadError } = await supabase.storage.from('product-media').upload(fileName, file);
-    if (uploadError) throw uploadError;
+    const { error } = await supabase.storage.from('product-media').upload(fileName, file);
+    if (error) throw error;
     const { data: { publicUrl } } = supabase.storage.from('product-media').getPublicUrl(fileName);
     return publicUrl;
   };
@@ -91,47 +124,36 @@ export default function AdminPage() {
         const url = await uploadFile(files[0]);
         setProductData(prev => ({ ...prev, image: url }));
       } else if (type === 'gallery') {
-        const urls = await Promise.all(Array.from(files).map(file => uploadFile(file)));
+        const urls = await Promise.all(Array.from(files).map(f => uploadFile(f)));
         setProductData(prev => ({ ...prev, images: [...prev.images, ...urls] }));
       } else if (type === 'video') {
         const url = await uploadFile(files[0]);
         setProductData(prev => ({ ...prev, videos: [...prev.videos, url] }));
       }
-      showNotification("✅ تم الرفع بنجاح");
-    } catch (error: any) { alert("⚠️ خطأ: " + error.message); }
+      showNotification("✅ تم الرفع");
+    } catch (error: any) { alert("خطأ: " + error.message); }
     finally { setIsSubmitting(false); }
   };
 
-  // 🎨 دالة الحفظ المحدثة (تحول الألوان والمقاسات لقائمة)
+  // دالة الحفظ (أصبحت أبسط لأن colors و sizes جاهزة كقوائم)
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productData.image) return alert("يرجى رفع صورة رئيسية");
     setIsSubmitting(true);
 
-    const colorsArray = productData.colors ? productData.colors.split(',').map(c => c.trim()).filter(c => c) : [];
-    const sizesArray = productData.sizes ? productData.sizes.split(',').map(s => s.trim()).filter(s => s) : [];
-
     const { error } = await supabase.from('products').insert([{ 
-      name: productData.name,
-      price: parseFloat(productData.price),
-      category: productData.category,
-      description: productData.description,
-      image: productData.image,
-      images: productData.images,
-      videos: productData.videos,
-      colors: colorsArray, // حفظ الألوان
-      sizes: sizesArray,   // حفظ المقاسات
+      name: productData.name, price: parseFloat(productData.price), category: productData.category,
+      description: productData.description, image: productData.image, images: productData.images,
+      videos: productData.videos, colors: productData.colors, sizes: productData.sizes,
       inStock: true, rating: 5.0, brand: "هبة الرحمن" 
     }]);
 
     if (!error) {
       showNotification("✨ تمت إضافة المنتج بنجاح");
       setShowAddProduct(false);
-      setProductData({ name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [], videos: [], colors: "", sizes: "" });
+      setProductData({ name: "", price: "", category: "إكسسوارات", description: "", image: "", images: [], videos: [], colors: [], sizes: [] });
       fetchData();
-    } else {
-      alert("خطأ: " + error.message);
-    }
+    } else { alert("خطأ: " + error.message); }
     setIsSubmitting(false);
   };
 
@@ -170,7 +192,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-luxury-cream flex flex-col md:flex-row">
-      
       {/* Sidebar (كمبيوتر) */}
       <div className="hidden md:flex w-64 bg-dark-900 border-l border-luxury-beige/10 p-6 fixed h-full z-40 flex-col">
          <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-10 text-center">هبة الرحمن</h2>
@@ -257,7 +278,6 @@ export default function AdminPage() {
                     <p><span className="opacity-40 text-xs">الزبون:</span> {o.customer_name}</p>
                     <p><span className="opacity-40 text-xs">الهاتف:</span> <span dir="ltr" className="inline-block">{o.phone}</span></p>
                     <p><span className="opacity-40 text-xs">العنوان:</span> {o.city} - {o.address}</p>
-                    {/* 🎯 عرض المنتجات والألوان المطلوبة */}
                     <div className="pt-2 mt-2 border-t border-white/5">
                        {o.items?.map((item: any, idx: number) => (
                          <p key={idx} className="text-xs opacity-70">• {item.name} {item.selectedColor && <span className="text-luxury-beige font-bold">(اللون: {item.selectedColor})</span>} {item.selectedSize && <span className="text-blue-400">(المقاس: {item.selectedSize})</span>}</p>
@@ -291,30 +311,55 @@ export default function AdminPage() {
                 <button onClick={() => setShowAddProduct(false)}><X/></button>
               </div>
               <form onSubmit={saveProduct} className="space-y-4 text-right">
-                <input placeholder="اسم القطعة" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" onChange={e => setProductData({...productData, name: e.target.value})} />
+                <input placeholder="اسم القطعة" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" value={productData.name} onChange={e => setProductData({...productData, name: e.target.value})} />
                 <div className="grid grid-cols-2 gap-4">
                   <select className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 text-sm" value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})}>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <input type="number" placeholder="السعر" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" onChange={e => setProductData({...productData, price: e.target.value})} />
+                  <input type="number" placeholder="السعر" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} />
                 </div>
-                <textarea placeholder="الوصف..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-24" onChange={e => setProductData({...productData, description: e.target.value})} />
+                <textarea placeholder="الوصف..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-24" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} />
                 
-                {/* 🎨 حقول الألوان والمقاسات الجديدة */}
-                <div className="bg-dark-800/50 p-4 rounded-2xl border border-luxury-beige/10 space-y-3">
-                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm"><span>الألوان والمقاسات المتوفرة</span><Palette size={16}/></div>
-                  <input 
-                    placeholder="الألوان (افصلي بفاصلة): ذهبي، فضي، أسود" 
-                    className="text-right w-full bg-dark-900 p-3 rounded-xl outline-none border border-white/5 text-sm" 
-                    value={productData.colors}
-                    onChange={e => setProductData({...productData, colors: e.target.value})} 
-                  />
-                  <input 
-                    placeholder="المقاسات (اختياري): S، M، L" 
-                    className="text-right w-full bg-dark-900 p-3 rounded-xl outline-none border border-white/5 text-sm" 
-                    value={productData.sizes}
-                    onChange={e => setProductData({...productData, sizes: e.target.value})} 
-                  />
+                {/* 🎨 اختيار الألوان بالضغط (الميزة الجديدة) */}
+                <div className="bg-dark-800/50 p-4 rounded-2xl border border-luxury-beige/10 space-y-4">
+                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm"><span>اختاري الألوان المتوفرة (اضغطي عليها)</span><Palette size={16}/></div>
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    {availableColors.map(color => (
+                      <button
+                        type="button"
+                        key={color.name}
+                        onClick={() => toggleColor(color.name)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-xs font-bold ${
+                          productData.colors.includes(color.name)
+                          ? 'border-luxury-beige bg-luxury-beige/10 scale-105'
+                          : 'border-white/5 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <span className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: color.code }}></span>
+                        {color.name}
+                        {productData.colors.includes(color.name) && <CheckCircle2 size={14} className="text-luxury-beige" />}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* اختيار المقاسات */}
+                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm pt-2 border-t border-white/5"><span>المقاسات (اختياري)</span></div>
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    {availableSizes.map(size => (
+                      <button
+                        type="button"
+                        key={size}
+                        onClick={() => toggleSize(size)}
+                        className={`min-w-[40px] px-3 py-2 rounded-lg border-2 transition-all text-xs font-bold ${
+                          productData.sizes.includes(size)
+                          ? 'border-luxury-beige bg-luxury-beige text-dark-900'
+                          : 'border-white/5 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* رفع الوسائط */}

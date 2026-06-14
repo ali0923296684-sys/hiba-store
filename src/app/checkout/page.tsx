@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react"; // أضفنا useEffect
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Truck, Check, Lock, 
@@ -29,26 +29,24 @@ export default function CheckoutPage() {
   const [promoMessage, setPromoMessage] = useState({ text: "", type: "" });
   const [isCheckingPromo, setIsCheckingPromo] = useState(false);
   
-  const [dbCities, setDbCities] = useState<any[]>([]); // 🗺️ حالة المدن المجلوبة
+  const [dbCities, setDbCities] = useState<any[]>([]); 
 
   const [formData, setFormData] = useState({
     fullName: "", phone: "", address: "", city: "",
   });
   const [orderNumber, setOrderNumber] = useState("");
 
-  // 🗺️ جلب المدن من قاعدة البيانات عند فتح الصفحة
   useEffect(() => {
     async function fetchCities() {
-      const { data } = await supabase.from('cities').select('*').order('shipping_cost');
+      const { data } = await supabase.from('cities').select('*').order('name');
       if (data && data.length > 0) {
         setDbCities(data);
-        setFormData(prev => ({ ...prev, city: data[0].name })); // تعيين أول مدينة كافتراضية
+        setFormData(prev => ({ ...prev, city: data[0].name }));
       }
     }
     fetchCities();
   }, []);
 
-  // 🧮 حساب الأسعار (يبحث عن سعر المدينة في قاعدة البيانات)
   const priceAfterDiscount = totalPrice - (totalPrice * discountPercent) / 100;
   const currentCityData = dbCities.find(c => c.name === formData.city);
   const shippingCost = currentCityData ? currentCityData.shipping_cost : 0;
@@ -111,7 +109,6 @@ export default function CheckoutPage() {
         return line;
       }).join("%0A");
 
-      // إرسال تلجرام
       const botToken = "8221648331:AAHQQT-1nEGbTHksAyAK5BVU4r8mqX61JOk";
       const chatId = "8459612624";
       const telegramItems = items.map((item) => `- ${item.name} (${item.quantity})${item.selectedColor ? ` - ${item.selectedColor}` : ''}`).join("\n");
@@ -121,7 +118,6 @@ export default function CheckoutPage() {
         body: JSON.stringify({ chat_id: chatId, text: telegramMessage }),
       });
 
-      // فتح واتساب
       const whatsappMessage = 
         `🏛️ طلب جديد%0A%0A` +
         `الاسم: ${formData.fullName}%0A` +
@@ -220,12 +216,12 @@ export default function CheckoutPage() {
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs uppercase opacity-40">المدينة *</label>
-                        {/* 🗺️ القائمة الآن تقرأ من قاعدة البيانات */}
+                        {/* 🛑 القائمة الآن تعرض أسماء المدن فقط بشكل نظيف */}
                         <select name="city" value={formData.city} className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 outline-none" onChange={handleInputChange}>
                             {dbCities.length === 0 && <option>جاري تحميل المدن...</option>}
                             {dbCities.map(city => (
                               <option key={city.id} value={city.name}>
-                                {city.name} {city.shipping_cost === 0 ? "(توصيل مجاني 🎉)" : `(توصيل ${city.shipping_cost} د.ل)`}
+                                {city.name}
                               </option>
                             ))}
                         </select>
@@ -236,7 +232,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* تنبيه التوصيل */}
+                  {/* تنبيه التوصيل (يظهر السعر هنا تلقائياً بعد اختيار المدينة) */}
                   <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-bold ${shippingCost === 0 ? 'bg-green-500/10 text-green-400' : 'bg-luxury-beige/10 text-luxury-beige'}`}>
                     <Truck className="w-5 h-5" />
                     {shippingCost === 0 ? `🎉 رائع! التوصيل مجاني إلى ${formData.city}` : `رسوم التوصيل إلى ${formData.city} هي ${shippingCost} د.ل`}
@@ -264,7 +260,7 @@ export default function CheckoutPage() {
                 {promoMessage.text && <p className={`text-[10px] mt-2 text-right ${promoMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{promoMessage.text}</p>}
               </div>
 
-              {/* تفاصيل الحساب */}
+              {/* تفاصيل الحساب (هنا يظهر سعر التوصيل) */}
               <div className="border-t border-white/5 pt-4 space-y-3 text-sm">
                 <div className="flex justify-between opacity-60">
                   <span>{formatPrice(totalPrice)}</span>

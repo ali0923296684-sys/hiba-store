@@ -22,7 +22,7 @@ export default function Footer() {
     },
     { 
       label: "Instagram", 
-      href: "#", 
+      href: "https://www.instagram.com/heba.alrahman.store?igsh=c3Flc2R1eWV1cTk2&utm_source=qr", // ✅ تم إضافة رابط الإنستقرام
       icon: <Instagram className="w-4 h-4" /> 
     },
   ];
@@ -37,10 +37,9 @@ export default function Footer() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[800px] h-[200px] md:h-[300px] bg-luxury-beige/[0.02] rounded-full blur-[150px]" />
 
         <div className="relative max-w-[1500px] mx-auto section-padding py-14 md:py-20">
-          {/* في الجوال يكون كل شيء في المنتصف، وفي الكمبيوتر يكون لليمين */}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-8 text-center md:text-right" dir="rtl">
             
-            {/* Brand (يأخذ عرض كامل في الجوال) */}
+            {/* Brand */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -130,7 +129,7 @@ export default function Footer() {
               </ul>
             </motion.div>
 
-            {/* Contact (يأخذ عرض كامل في الجوال) */}
+            {/* Contact */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}

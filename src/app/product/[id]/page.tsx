@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, Check, ChevronLeft,
   Truck, Shield, RotateCcw, Play, 
-  Loader2, Video, AlertCircle
+  Loader2, Video, AlertCircle, ShoppingBag // 🛍️ أضفنا أيقونة الحقيبة
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
@@ -24,7 +24,7 @@ export default function ProductDetail() {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [addedToCart, setAddedToCart] = useState(false);
-  const [showColorError, setShowColorError] = useState(false); // لتنبيه الزبون باختيار اللون
+  const [showColorError, setShowColorError] = useState(false);
   
   const { addToCart, setIsCartOpen } = useCart();
 
@@ -57,10 +57,8 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!product) return;
     
-    // إجبار الزبون على اختيار اللون إذا كان المنتج يحتوي على ألوان
     if (product.colors && product.colors.length > 0 && !selectedColor) {
       setShowColorError(true);
-      // اهتزاز بسيط لتنبيه الزبون
       setTimeout(() => setShowColorError(false), 2000);
       return;
     }
@@ -90,7 +88,6 @@ export default function ProductDetail() {
     <div className="min-h-screen bg-[#050505] text-luxury-cream">
       <div className="pt-24 md:pt-28 pb-20 section-padding max-w-[1500px] mx-auto">
         
-        {/* مسار التنقل */}
         <div className="flex items-center gap-2 text-xs md:text-sm text-luxury-cream/40 mb-6">
           <Link href="/" className="hover:text-luxury-beige">الرئيسية</Link>
           <ChevronLeft className="w-3 h-3" />
@@ -137,22 +134,16 @@ export default function ProductDetail() {
 
             <p className="text-luxury-cream/60 leading-relaxed text-sm md:text-lg">{product.description}</p>
 
-            {/* 🎨 قسم اختيار الألوان المحدث */}
+            {/* قسم الألوان */}
             {product.colors && product.colors.length > 0 && (
               <div className="space-y-3 py-2">
                 <div className="flex justify-between items-center">
                   <p className="text-sm font-medium text-luxury-cream">
                     اللون: <span className="text-luxury-beige font-bold">{selectedColor || "اختاري اللون"}</span>
                   </p>
-                  {/* رسالة تنبيه عند نسيان اختيار اللون */}
                   <AnimatePresence>
                     {showColorError && (
-                      <motion.span 
-                        initial={{ opacity: 0, x: 10 }} 
-                        animate={{ opacity: 1, x: 0 }} 
-                        exit={{ opacity: 0 }}
-                        className="text-red-400 text-xs flex items-center gap-1"
-                      >
+                      <motion.span initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="text-red-400 text-xs flex items-center gap-1">
                         <AlertCircle size={12} /> يرجى اختيار اللون
                       </motion.span>
                     )}
@@ -160,15 +151,7 @@ export default function ProductDetail() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {product.colors.map(c => (
-                    <button 
-                      key={c} 
-                      onClick={() => { setSelectedColor(c); setShowColorError(false); }} 
-                      className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-300 ${
-                        selectedColor === c 
-                        ? 'border-luxury-beige bg-luxury-beige text-dark-900 scale-105 shadow-lg shadow-luxury-beige/20' 
-                        : `border-white/10 hover:border-luxury-beige/50 text-luxury-cream/80 ${showColorError ? 'border-red-500/50 animate-pulse' : ''}`
-                      }`}
-                    >
+                    <button key={c} onClick={() => { setSelectedColor(c); setShowColorError(false); }} className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-300 ${selectedColor === c ? 'border-luxury-beige bg-luxury-beige text-dark-900 scale-105' : `border-white/10 hover:border-luxury-beige/50 text-luxury-cream/80 ${showColorError ? 'border-red-500/50 animate-pulse' : ''}`}`}>
                       {c}
                     </button>
                   ))}
@@ -188,12 +171,21 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* زر الإضافة */}
-            <div className="pt-4">
+            {/* 🛍️ قسم الأزرار (إضافة + ذهاب للحقيبة) */}
+            <div className="pt-4 space-y-3">
+              {/* زر 1: أضيفي للحقيبة */}
               <button onClick={handleAddToCart} disabled={addedToCart} className={`w-full py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${addedToCart ? "bg-green-600" : "bg-luxury-beige text-dark-900 hover:bg-luxury-gold"}`}>
                 {addedToCart ? <Check size={22} /> : <ShoppingCart size={22} />}
-                {addedToCart ? "تمت الإضافة" : "أضيفي للحقيبة الآن"}
+                {addedToCart ? "تمت الإضافة بنجاح" : "أضيفي للحقيبة الآن"}
               </button>
+
+              {/* زر 2: الذهاب للحقيبة (الجديد) */}
+              <Link href="/checkout" className="block">
+                <button className="w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all border-2 border-luxury-beige/40 text-luxury-beige hover:bg-luxury-beige/10 active:scale-95">
+                  <ShoppingBag size={20} />
+                  الذهاب للحقيبة وإتمام الشراء
+                </button>
+              </Link>
             </div>
 
             {/* Trust Badges */}

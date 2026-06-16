@@ -5,15 +5,10 @@ import FashionTrends from "@/components/FashionTrends";
 import FashionTips from "@/components/FashionTips";
 import NewsSection from "@/components/NewsSection";
 import AboutSection from "@/components/AboutSection";
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
-import CartDrawer from "@/components/CartDrawer";
 
 export default function Home() {
   return (
-    <main className="relative overflow-hidden">
-      <Navbar />
-      <CartDrawer />
+    <>
       <Hero />
       <Categories />
       <FeaturedProducts />
@@ -21,7 +16,6 @@ export default function Home() {
       <FashionTips />
       <AboutSection />
       <NewsSection />
-      <Footer />
-    </main>
+    </>
   );
 }

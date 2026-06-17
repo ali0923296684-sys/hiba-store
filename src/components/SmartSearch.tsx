@@ -6,6 +6,7 @@ import { Search, Mic, X, Loader2, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // ← أضفنا هذا السطر
 
 interface SmartSearchProps {
   isOpen: boolean;
@@ -13,12 +14,19 @@ interface SmartSearchProps {
 }
 
 export default function SmartSearch({ isOpen, onClose }: SmartSearchProps) {
+  const router = useRouter() // ← أضفنا هذا السطر
   const [query, setQuery] = useState("");
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // ← دالة الخروج الجديدة
+  const handleExit = () => {
+    onClose(); // اقفل نافذة البحث
+    router.back(); // ارجع للصفحة السابقة
+  }
 
   // دالة البحث في قاعدة البيانات
   useEffect(() => {
@@ -87,21 +95,30 @@ export default function SmartSearch({ isOpen, onClose }: SmartSearchProps) {
             initial={{ y: -50, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -50, opacity: 0, scale: 0.95 }}
-            className="w-full max-w-3xl bg-dark-900 border border-luxury-beige/20 rounded-[30px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            className="w-full max-w-3xl bg-dark-900 border border-luxury-beige/20 rounded-[30px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] relative"
           >
-            {/* شريط البحث */}
-            <div className="p-4 border-b border-white/5 relative flex items-center gap-3 bg-dark-800/50">
-              <Search className="w-6 h-6 text-luxury-beige" />
+
+            {/* ← ← ← زر الخروج الجديد في الأعلى يمين */}
+            <button
+              onClick={handleExit}
+              className="absolute top-4 right-4 z-50 w-11 h-11 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 transition-all"
+            >
+              <X size={22} />
+            </button>
+
+            {/* شريط البحث (معدل للعربية) */}
+            <div className="p-4 pr-16 border-b border-white/5 flex items-center gap-3 bg-dark-800/50">
+              <Search className="w-6 h-6 text-luxury-beige order-last" />
               <input
                 type="text"
                 autoFocus
                 placeholder="ابحثي عن حقيبة، عطر، أو لون..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 bg-transparent border-none outline-none text-xl text-luxury-cream placeholder:text-white/20"
+                className="flex-1 bg-transparent border-none outline-none text-xl text-luxury-cream placeholder:text-white/20 text-right"
               />
               
-              {/* أزرار الذكاء */}
+              {/* أزرار التحكم في اليسار */}
               <div className="flex items-center gap-2">
                 <button 
                   onClick={startVoiceSearch}
@@ -118,12 +135,6 @@ export default function SmartSearch({ isOpen, onClose }: SmartSearchProps) {
                 >
                   <SlidersHorizontal className="w-5 h-5" />
                 </button>
-
-                <div className="w-px h-8 bg-white/10 mx-2" />
-                
-                <button onClick={onClose} className="p-2 text-white/40 hover:text-red-400 transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
               </div>
             </div>
 
@@ -136,7 +147,7 @@ export default function SmartSearch({ isOpen, onClose }: SmartSearchProps) {
                   exit={{ height: 0, opacity: 0 }}
                   className="px-6 py-4 bg-dark-800 border-b border-white/5 overflow-hidden"
                 >
-                  <p className="text-sm text-luxury-beige mb-3">ميزانيتكِ: أظهر المنتجات حتى {formatPrice(maxPrice)}</p>
+                  <p className="text-sm text-luxury-beige mb-3 text-right">ميزانيتكِ: أظهر المنتجات حتى {formatPrice(maxPrice)}</p>
                   <input 
                     type="range" 
                     min="50" max="5000" step="50"
@@ -166,8 +177,8 @@ export default function SmartSearch({ isOpen, onClose }: SmartSearchProps) {
                       <div className="aspect-square rounded-xl overflow-hidden mb-3 bg-dark-800">
                         <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
-                      <h4 className="text-xs font-bold text-luxury-cream line-clamp-1 mb-1 group-hover:text-luxury-beige">{product.name}</h4>
-                      <p className="text-sm font-serif gold-gradient-text font-bold">{formatPrice(product.price)}</p>
+                      <h4 className="text-xs font-bold text-luxury-cream line-clamp-1 mb-1 group-hover:text-luxury-beige text-right">{product.name}</h4>
+                      <p className="text-sm font-serif gold-gradient-text font-bold text-right">{formatPrice(product.price)}</p>
                     </Link>
                   ))}
                 </div>

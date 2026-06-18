@@ -1,19 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Crown, Instagram, Facebook, Phone, MapPin, Heart } from "lucide-react";
+import { Crown, Instagram, Facebook, Phone, MapPin, Heart, MessageCircle } from "lucide-react";
 
 export default function Footer() {
   
   const socialLinks = [
     { 
       label: "Facebook", 
-      href: "https://www.facebook.com/share/198uN6sRZi/?mibextid=wwXIfr", 
+      href: "https://www.facebook.com/share/18gxGwAqoi/?mibextid=wwXIfr", 
       icon: <Facebook className="w-4 h-4" /> 
     },
     { 
       label: "TikTok", 
-      href: "https://www.tiktok.com/@haybatalrahman.com0?_r=1&_t=ZS-97AsLQpaBNv", 
+      href: "https://www.tiktok.com/@haybatalrahman.com0?_r=1&_t=ZS-97JpX1gob7H", 
       icon: (
         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
           <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5v3a3 3 0 0 1-3-3v11a4 4 0 1 1-4-4v-3z"></path>
@@ -22,8 +22,13 @@ export default function Footer() {
     },
     { 
       label: "Instagram", 
-      href: "https://www.instagram.com/heba.alrahman.store?igsh=c3Flc2R1eWV1cTk2&utm_source=qr", // ✅ تم إضافة رابط الإنستقرام
+      href: "https://www.instagram.com/heba.alrahman.store?igsh=MTAzeWV5ajF5eHZ4bA%3D%3D&utm_source=qr",
       icon: <Instagram className="w-4 h-4" /> 
+    },
+    { 
+      label: "WhatsApp", 
+      href: "https://wa.me/218935364926",
+      icon: <MessageCircle className="w-4 h-4" /> 
     },
   ];
 
@@ -75,6 +80,7 @@ export default function Footer() {
                     whileHover={{ scale: 1.15, y: -3 }}
                     whileTap={{ scale: 0.9 }}
                     className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-dark-800/50 flex items-center justify-center text-luxury-beige hover:text-luxury-gold transition-all duration-300 border border-luxury-beige/5 hover:border-luxury-beige/20"
+                    title={social.label}
                   >
                     {social.icon}
                   </motion.a>
@@ -141,14 +147,27 @@ export default function Footer() {
                 تواصل معنا
               </h4>
               <ul className="space-y-4">
-                <li className="flex items-center justify-center md:justify-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-luxury-beige/5 flex items-center justify-center shrink-0">
-                    <Phone className="w-4 h-4 text-luxury-beige/60" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-luxury-cream/30 text-[10px] mb-0.5">واتساب / هاتف</p>
-                    <span className="text-luxury-cream/60 text-sm" dir="ltr">+218 93 147 3373</span>
-                  </div>
+                <li>
+                  <a href="https://wa.me/218935364926" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-3 group">
+                    <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0 group-hover:bg-green-500/20 transition-all">
+                      <MessageCircle className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-luxury-cream/30 text-[10px] mb-0.5">واتساب</p>
+                      <span className="text-luxury-cream/60 text-sm group-hover:text-green-400 transition-colors" dir="ltr">+218 93-536-4926</span>
+                    </div>
+                  </a>
+                </li>
+                <li>
+                  <a href="tel:+218935364926" className="flex items-center justify-center md:justify-start gap-3 group">
+                    <div className="w-10 h-10 rounded-xl bg-luxury-beige/5 flex items-center justify-center shrink-0 group-hover:bg-luxury-beige/10 transition-all">
+                      <Phone className="w-4 h-4 text-luxury-beige/60" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-luxury-cream/30 text-[10px] mb-0.5">هاتف</p>
+                      <span className="text-luxury-cream/60 text-sm group-hover:text-luxury-beige transition-colors" dir="ltr">+218 93-536-4926</span>
+                    </div>
+                  </a>
                 </li>
                 <li className="flex items-center justify-center md:justify-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-luxury-beige/5 flex items-center justify-center shrink-0">

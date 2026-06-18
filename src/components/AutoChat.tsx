@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Bot, User, ShoppingBag } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User } from "lucide-react";
 
 interface Message {
   id: number;
@@ -17,7 +17,6 @@ interface QuickButton {
   value: string;
 }
 
-// ====== الردود التلقائية - عدّلها حسب متجرك ======
 const AUTO_REPLIES: { keywords: string[]; reply: string; buttons?: QuickButton[] }[] = [
   {
     keywords: ["سلام", "هلا", "مرحبا", "هاي", "السلام", "اهلا", "أهلا"],
@@ -55,7 +54,13 @@ const AUTO_REPLIES: { keywords: string[]; reply: string; buttons?: QuickButton[]
   },
   {
     keywords: ["تواصل", "رقم", "هاتف", "واتساب", "واتس", "whatsapp", "اتصال", "تلفون"],
-    reply: "📞 تقدرين تتواصلين معنا عبر:\n\n📱 واتساب: 0911234567\n📧 إيميل: info@hibatrahman.xyz\n📸 إنستغرام: @hibatrahman\n\nأو أرسلي طلبك هنا وبنرد عليكِ! 💌",
+    reply: "📞 تقدرين تتواصلين معنا عبر:\n\n📱 واتساب: +218 93-5364926\n📞 هاتف: +218 93-5364926\n📘 فيسبوك: هبة الرحمن\n📸 إنستغرام: @heba.alrahman.store\n🎵 تيك توك: @haybatalrahman.com0\n\nأو أرسلي طلبك هنا وبنرد عليكِ! 💌",
+    buttons: [
+      { label: "📱 واتساب مباشر", value: "واتساب_مباشر" },
+      { label: "📘 فيسبوك", value: "فيسبوك_مباشر" },
+      { label: "📸 إنستغرام", value: "انستغرام_مباشر" },
+      { label: "🎵 تيك توك", value: "تيكتوك_مباشر" },
+    ],
   },
   {
     keywords: ["عرض", "عروض", "خصم", "تخفيض", "كوبون", "كود"],
@@ -68,7 +73,8 @@ const AUTO_REPLIES: { keywords: string[]; reply: string; buttons?: QuickButton[]
     keywords: ["ارجاع", "استرجاع", "تبديل", "استبدال", "ضمان", "مرتجع"],
     reply: "🔄 سياسة الاستبدال والإرجاع:\n\n✅ استبدال خلال 3 أيام من الاستلام\n✅ المنتج لازم يكون بحالته الأصلية\n✅ مع الفاتورة والتغليف\n\n📞 تواصلي معنا لترتيب الاستبدال",
     buttons: [
-      { label: "📞 تواصل معنا", value: "تواصل" },
+      { label: "📱 واتساب", value: "واتساب_مباشر" },
+      { label: "📞 اتصال", value: "اتصال_مباشر" },
     ],
   },
   {
@@ -77,11 +83,36 @@ const AUTO_REPLIES: { keywords: string[]; reply: string; buttons?: QuickButton[]
   },
   {
     keywords: ["شكرا", "شكراً", "مشكور", "تسلم", "يعطيك العافية"],
-    reply: "العفو حبيبتي! 🌹\nنورتِ متجر هبة الرحمن\n\nإذا تحتاجين أي شيء ثاني أنا هنا! 💕",
+    reply: "العفو حبيبتي! 🌹\nنورتِ متجر هبة الرحمن\n\nتابعينا على حساباتنا:\n📘 فيسبوك\n📸 إنستغرام\n🎵 تيك توك\n\nإذا تحتاجين أي شيء ثاني أنا هنا! 💕",
+    buttons: [
+      { label: "📘 فيسبوك", value: "فيسبوك_مباشر" },
+      { label: "📸 إنستغرام", value: "انستغرام_مباشر" },
+      { label: "🎵 تيك توك", value: "تيكتوك_مباشر" },
+    ],
+  },
+  {
+    keywords: ["فيسبوك", "فيس", "facebook", "fb"],
+    reply: "📘 تابعينا على فيسبوك وشوفي آخر المنتجات والعروض!\n\nصفحتنا: هبة الرحمن",
+    buttons: [
+      { label: "📘 زيارة صفحة فيسبوك", value: "فيسبوك_مباشر" },
+    ],
+  },
+  {
+    keywords: ["انستغرام", "انستقرام", "instagram", "insta"],
+    reply: "📸 تابعينا على إنستغرام لآخر الصيحات والموديلات!\n\nحسابنا: @heba.alrahman.store",
+    buttons: [
+      { label: "📸 زيارة إنستغرام", value: "انستغرام_مباشر" },
+    ],
+  },
+  {
+    keywords: ["تيك توك", "تيكتوك", "tiktok", "تك توك"],
+    reply: "🎵 تابعينا على تيك توك لفيديوهات المنتجات!\n\nحسابنا: @haybatalrahman.com0",
+    buttons: [
+      { label: "🎵 زيارة تيك توك", value: "تيكتوك_مباشر" },
+    ],
   },
 ];
 
-// الرد الافتراضي لما ما يفهم السؤال
 const DEFAULT_REPLY: Message = {
   id: 0,
   text: "عذراً، ما فهمت سؤالكِ 😅\nممكن تسألين بطريقة ثانية؟\n\nأو اختاري من الخيارات:",
@@ -101,7 +132,7 @@ function getTime(): string {
 
 function getBotReply(userMessage: string): { text: string; buttons?: QuickButton[] } {
   const msg = userMessage.toLowerCase().trim();
-  
+
   for (const item of AUTO_REPLIES) {
     for (const keyword of item.keywords) {
       if (msg.includes(keyword.toLowerCase())) {
@@ -109,9 +140,19 @@ function getBotReply(userMessage: string): { text: string; buttons?: QuickButton
       }
     }
   }
-  
+
   return { text: DEFAULT_REPLY.text, buttons: DEFAULT_REPLY.buttons };
 }
+
+// ====== روابط التواصل الاجتماعي ======
+const SOCIAL_LINKS: Record<string, string> = {
+  "واتساب_مباشر": "https://wa.me/218935364926",
+  "فيسبوك_مباشر": "https://www.facebook.com/share/18gxGwAqoi/?mibextid=wwXIfr",
+  "انستغرام_مباشر": "https://www.instagram.com/heba.alrahman.store",
+  "تيكتوك_مباشر": "https://www.tiktok.com/@haybatalrahman.com0",
+  "اتصال_مباشر": "tel:+218935364926",
+  "رابط_المتجر": "/shop",
+};
 
 export default function AutoChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -146,7 +187,17 @@ export default function AutoChat() {
     const messageText = text || input.trim();
     if (!messageText) return;
 
-    // رسالة المستخدم
+    // لو ضغط زر رابط مباشر — افتح الرابط
+    if (SOCIAL_LINKS[messageText]) {
+      const link = SOCIAL_LINKS[messageText];
+      if (link.startsWith("/")) {
+        window.location.href = link;
+      } else {
+        window.open(link, "_blank");
+      }
+      return;
+    }
+
     const userMsg: Message = {
       id: Date.now(),
       text: messageText,
@@ -158,15 +209,8 @@ export default function AutoChat() {
     setInput("");
     setIsTyping(true);
 
-    // رد البوت بعد تأخير (يبين كإنه يكتب)
     setTimeout(() => {
       const reply = getBotReply(messageText);
-
-      // لو الزبون ضغط "رابط المتجر"
-      if (messageText === "رابط_المتجر") {
-        window.location.href = "/shop";
-        return;
-      }
 
       const botMsg: Message = {
         id: Date.now() + 1,
@@ -178,7 +222,7 @@ export default function AutoChat() {
 
       setMessages((prev) => [...prev, botMsg]);
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000); // تأخير 1-2 ثانية
+    }, 1000 + Math.random() * 1000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -205,8 +249,7 @@ export default function AutoChat() {
                        hover:shadow-luxury-beige/50 transition-shadow"
           >
             <MessageCircle className="w-7 h-7 text-dark-900" />
-            
-            {/* عداد الرسائل غير المقروءة */}
+
             {unread > 0 && (
               <motion.span
                 initial={{ scale: 0 }}
@@ -268,19 +311,17 @@ export default function AutoChat() {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex gap-2 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}
                 >
-                  {/* أيقونة المرسل */}
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 
-                    ${msg.sender === "bot" 
-                      ? "bg-gradient-to-br from-luxury-beige to-amber-600" 
+                    ${msg.sender === "bot"
+                      ? "bg-gradient-to-br from-luxury-beige to-amber-600"
                       : "bg-white/10"}`}
                   >
-                    {msg.sender === "bot" 
-                      ? <Bot className="w-4 h-4 text-dark-900" /> 
+                    {msg.sender === "bot"
+                      ? <Bot className="w-4 h-4 text-dark-900" />
                       : <User className="w-4 h-4 text-white/60" />}
                   </div>
 
                   <div className={`max-w-[75%] ${msg.sender === "user" ? "items-end" : "items-start"} flex flex-col`}>
-                    {/* فقاعة الرسالة */}
                     <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line
                       ${msg.sender === "bot"
                         ? "bg-white/5 text-luxury-cream rounded-tl-sm border border-white/5"
@@ -289,7 +330,6 @@ export default function AutoChat() {
                       {msg.text}
                     </div>
 
-                    {/* الأزرار السريعة */}
                     {msg.buttons && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {msg.buttons.map((btn, i) => (
@@ -306,13 +346,11 @@ export default function AutoChat() {
                       </div>
                     )}
 
-                    {/* الوقت */}
                     <span className="text-[10px] text-white/20 mt-1 px-1">{msg.time}</span>
                   </div>
                 </motion.div>
               ))}
 
-              {/* مؤشر الكتابة */}
               {isTyping && (
                 <motion.div
                   initial={{ opacity: 0 }}

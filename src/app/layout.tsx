@@ -4,6 +4,7 @@ import { CartProvider } from "@/context/CartContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
+import AutoChat from "@/components/AutoChat"; // ✅ السطر الجديد الاول: استيراد الشات
 
 export const metadata: Metadata = {
   title: "هبة الرحمن | وجهتكِ العالمية للإكسسوارات الفاخرة 2026",
@@ -44,6 +45,8 @@ export default function RootLayout({
           
           {/* الفوتر (يظهر في جميع الصفحات) */}
           <Footer />
+
+          <AutoChat /> {/* ✅ السطر الجديد الثاني: اظهار الشات في كل الصفحات */}
         </CartProvider>
       </body>
     </html>

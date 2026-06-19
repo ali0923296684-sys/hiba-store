@@ -6,11 +6,12 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Package, ShoppingCart,
-  Plus, Trash2, LogOut, Loader2, X, Upload, Film, Image as ImageIcon, 
+  Plus, Trash2, LogOut, Loader2, X, Upload, Film, Image as ImageIcon,
   CheckCircle2, DollarSign, Tag, Palette, Edit, MapPin
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
+import SalesChart from "@/components/SalesChart";
 
 type AdminTab = "dashboard" | "products" | "orders";
 
@@ -30,17 +31,16 @@ export default function AdminPage() {
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [dbOrders, setDbOrders] = useState<any[]>([]);
   const [promoCodes, setPromoCodes] = useState<any[]>([]);
-  const [dbCities, setDbCities] = useState<any[]>([]); // 🗺️ حالة المدن
+  const [dbCities, setDbCities] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [notification, setNotification] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  
   const [newPromo, setNewPromo] = useState({ code: "", discount: "" });
-  const [newCity, setNewCity] = useState({ name: "", cost: "" }); // 🗺️ حالة المدينة الجديدة
+  const [newCity, setNewCity] = useState({ name: "", cost: "" });
   const [productData, setProductData] = useState({
-    name: "", price: "", category: "إكسسوارات", description: "", image: "", 
+    name: "", price: "", category: "إكسسوارات", description: "", image: "",
     images: [] as string[], videos: [] as string[], colors: [] as string[], sizes: [] as string[]
   });
 
@@ -51,7 +51,7 @@ export default function AdminPage() {
     const { data: products } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
     const { data: promos } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
-    const { data: cities } = await supabase.from('cities').select('*').order('name'); // 🗺️ جلب المدن
+    const { data: cities } = await supabase.from('cities').select('*').order('name');
     if (products) setDbProducts(products);
     if (orders) setDbOrders(orders);
     if (promos) setPromoCodes(promos);
@@ -59,24 +59,20 @@ export default function AdminPage() {
     setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) fetchData();
-  }, [isAuthenticated, fetchData]);
+  useEffect(() => { if (isAuthenticated) fetchData(); }, [isAuthenticated, fetchData]);
 
-  // 🗺️ دوال المدن
   const handleAddCity = async () => {
     if (!newCity.name) return;
     const { error } = await supabase.from('cities').insert([{ name: newCity.name, shipping_cost: parseInt(newCity.cost) || 0 }]);
     if (!error) { showNotification("✅ تم إضافة المدينة"); setNewCity({ name: "", cost: "" }); fetchData(); }
     else { alert("ربما المدينة موجودة بالفعل!"); }
   };
+
   const deleteCity = async (id: number) => {
     await supabase.from('cities').delete().eq('id', id);
-    fetchData();
-    showNotification("🗑 تم حذف المدينة");
+    fetchData(); showNotification("🗑 تم حذف المدينة");
   };
 
-  // 🛑 الدالة المفقودة التي تسبب الخطأ (تمت إعادتها)
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (!error) { showNotification("✅ تم التحديث"); fetchData(); }
@@ -101,6 +97,7 @@ export default function AdminPage() {
   const toggleColor = (colorName: string) => {
     setProductData(prev => ({ ...prev, colors: prev.colors.includes(colorName) ? prev.colors.filter(c => c !== colorName) : [...prev.colors, colorName] }));
   };
+
   const toggleSize = (size: string) => {
     setProductData(prev => ({ ...prev, sizes: prev.sizes.includes(size) ? prev.sizes.filter(s => s !== size) : [...prev.sizes, size] }));
   };
@@ -110,10 +107,10 @@ export default function AdminPage() {
     const { error } = await supabase.from('promo_codes').insert([{ code: newPromo.code.toUpperCase(), discount_percentage: parseInt(newPromo.discount), is_active: true }]);
     if (!error) { showNotification("✅ تم إضافة كود الخصم"); setNewPromo({ code: "", discount: "" }); fetchData(); }
   };
+
   const deletePromo = async (id: number) => {
     await supabase.from('promo_codes').delete().eq('id', id);
-    fetchData();
-    showNotification("🗑 تم الحذف");
+    fetchData(); showNotification("🗑 تم الحذف");
   };
 
   const uploadFile = async (file: File) => {
@@ -129,16 +126,9 @@ export default function AdminPage() {
     if (!files || files.length === 0) return;
     setIsSubmitting(true);
     try {
-      if (type === 'main') {
-        const url = await uploadFile(files[0]);
-        setProductData(prev => ({ ...prev, image: url }));
-      } else if (type === 'gallery') {
-        const urls = await Promise.all(Array.from(files).map(f => uploadFile(f)));
-        setProductData(prev => ({ ...prev, images: [...prev.images, ...urls] }));
-      } else if (type === 'video') {
-        const url = await uploadFile(files[0]);
-        setProductData(prev => ({ ...prev, videos: [...prev.videos, url] }));
-      }
+      if (type === 'main') { const url = await uploadFile(files[0]); setProductData(prev => ({ ...prev, image: url })); }
+      else if (type === 'gallery') { const urls = await Promise.all(Array.from(files).map(f => uploadFile(f))); setProductData(prev => ({ ...prev, images: [...prev.images, ...urls] })); }
+      else if (type === 'video') { const url = await uploadFile(files[0]); setProductData(prev => ({ ...prev, videos: [...prev.videos, url] })); }
       showNotification("✅ تم الرفع");
     } catch (error: any) { alert("خطأ: " + error.message); }
     finally { setIsSubmitting(false); }
@@ -154,19 +144,10 @@ export default function AdminPage() {
       videos: productData.videos, colors: productData.colors, sizes: productData.sizes, brand: "هبة الرحمن"
     };
     let error;
-    if (editingId) {
-      const res = await supabase.from('products').update(dataToSave).eq('id', editingId);
-      error = res.error;
-    } else {
-      const res = await supabase.from('products').insert([{ ...dataToSave, inStock: true, rating: 5.0 }]);
-      error = res.error;
-    }
-    if (!error) {
-      showNotification(editingId ? "✅ تم تعديل المنتج" : "✨ تمت إضافة المنتج");
-      setShowAddProduct(false);
-      setEditingId(null);
-      fetchData();
-    } else { alert("خطأ: " + error.message); }
+    if (editingId) { const res = await supabase.from('products').update(dataToSave).eq('id', editingId); error = res.error; }
+    else { const res = await supabase.from('products').insert([{ ...dataToSave, inStock: true, rating: 5.0 }]); error = res.error; }
+    if (!error) { showNotification(editingId ? "✅ تم تعديل المنتج" : "✨ تمت إضافة المنتج"); setShowAddProduct(false); setEditingId(null); fetchData(); }
+    else { alert("خطأ: " + error.message); }
     setIsSubmitting(false);
   };
 
@@ -176,10 +157,7 @@ export default function AdminPage() {
     else { setLoginError("كلمة المرور غير صحيحة"); }
   };
 
-  const showNotification = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(""), 3000);
-  };
+  const showNotification = (msg: string) => { setNotification(msg); setTimeout(() => setNotification(""), 3000); };
 
   const navItems = [
     { id: "dashboard", label: "الرئيسية", icon: LayoutDashboard },
@@ -206,16 +184,16 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-luxury-cream flex flex-col md:flex-row">
       <div className="hidden md:flex w-64 bg-dark-900 border-l border-luxury-beige/10 p-6 fixed h-full z-40 flex-col">
-         <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-10 text-center">هبة الرحمن</h2>
-         <nav className="space-y-2 flex-1">
-            {navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === item.id ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}><item.icon size={18}/> {item.label}</button>))}
-         </nav>
-         <button onClick={() => setIsAuthenticated(false)} className="w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/5"><LogOut size={18}/> خروج</button>
+        <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-10 text-center">هبة الرحمن</h2>
+        <nav className="space-y-2 flex-1">
+          {navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl ${activeTab === item.id ? "bg-luxury-beige text-dark-900 font-bold" : "hover:bg-white/5"}`}><item.icon size={18} /> {item.label}</button>))}
+        </nav>
+        <button onClick={() => setIsAuthenticated(false)} className="w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/5"><LogOut size={18} /> خروج</button>
       </div>
 
       <header className="md:hidden sticky top-0 z-30 bg-dark-900/90 backdrop-blur-lg border-b border-white/5 p-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-bold gold-gradient-text">لوحة الإدارة</h2>
-        <button onClick={() => setIsAuthenticated(false)} className="text-red-400 p-2"><LogOut size={20}/></button>
+        <button onClick={() => setIsAuthenticated(false)} className="text-red-400 p-2"><LogOut size={20} /></button>
       </header>
 
       <div className="flex-1 md:mr-64 p-4 md:p-8 pb-28 md:pb-8">
@@ -228,31 +206,34 @@ export default function AdminPage() {
               <div className="glass-card p-4 md:p-6 border-white/5 text-right col-span-2 lg:col-span-1"><Package className="text-luxury-beige mb-2 mr-auto" size={20} /><p className="text-[10px] uppercase opacity-40">المنتجات</p><h2 className="text-lg md:text-3xl font-serif font-bold">{dbProducts.length}</h2></div>
             </div>
 
+            {/* 📊 الرسم البياني للمبيعات */}
+            <SalesChart orders={dbOrders} />
+
             {/* أكواد الخصم */}
             <div className="glass-card p-4 md:p-6 border-luxury-beige/10 text-right">
               <div className="flex items-center justify-end gap-2 mb-4"><h2 className="font-serif text-lg">أكواد الخصم</h2><Tag size={18} className="text-luxury-beige" /></div>
               <div className="flex flex-col sm:flex-row-reverse gap-2 mb-4">
-                <input placeholder="الكود" className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right uppercase text-sm" value={newPromo.code} onChange={e => setNewPromo({...newPromo, code: e.target.value})} />
-                <input type="number" placeholder="%" className="bg-dark-800 p-3 rounded-xl w-full sm:w-24 border border-white/5 outline-none text-center text-sm" value={newPromo.discount} onChange={e => setNewPromo({...newPromo, discount: e.target.value})} />
+                <input placeholder="الكود" className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right uppercase text-sm" value={newPromo.code} onChange={e => setNewPromo({ ...newPromo, code: e.target.value })} />
+                <input type="number" placeholder="%" className="bg-dark-800 p-3 rounded-xl w-full sm:w-24 border border-white/5 outline-none text-center text-sm" value={newPromo.discount} onChange={e => setNewPromo({ ...newPromo, discount: e.target.value })} />
                 <button onClick={handleAddPromo} className="btn-primary px-6 py-3 rounded-xl text-sm font-bold">إضافة</button>
               </div>
               <div className="flex flex-wrap gap-2 justify-end">
-                {promoCodes.map(p => (<div key={p.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center gap-2 text-xs"><button onClick={() => deletePromo(p.id)} className="text-red-400"><X size={14}/></button><span className="opacity-40">({p.discount_percentage}%)</span><span className="font-bold text-luxury-beige">{p.code}</span></div>))}
+                {promoCodes.map(p => (<div key={p.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center gap-2 text-xs"><button onClick={() => deletePromo(p.id)} className="text-red-400"><X size={14} /></button><span className="opacity-40">({p.discount_percentage}%)</span><span className="font-bold text-luxury-beige">{p.code}</span></div>))}
               </div>
             </div>
 
-            {/* 🗺️ قسم إدارة مدن التوصيل الجديد */}
+            {/* مدن التوصيل */}
             <div className="glass-card p-4 md:p-6 border-luxury-beige/10 text-right">
               <div className="flex items-center justify-end gap-2 mb-4"><h2 className="font-serif text-lg">مدن التوصيل وأسعارها</h2><MapPin size={18} className="text-luxury-beige" /></div>
               <div className="flex flex-col sm:flex-row-reverse gap-2 mb-4">
-                <input placeholder="اسم المدينة" className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right text-sm" value={newCity.name} onChange={e => setNewCity({...newCity, name: e.target.value})} />
-                <input type="number" placeholder="السعر (0=مجاني)" className="bg-dark-800 p-3 rounded-xl w-full sm:w-40 border border-white/5 outline-none text-center text-sm" value={newCity.cost} onChange={e => setNewCity({...newCity, cost: e.target.value})} />
+                <input placeholder="اسم المدينة" className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right text-sm" value={newCity.name} onChange={e => setNewCity({ ...newCity, name: e.target.value })} />
+                <input type="number" placeholder="السعر (0=مجاني)" className="bg-dark-800 p-3 rounded-xl w-full sm:w-40 border border-white/5 outline-none text-center text-sm" value={newCity.cost} onChange={e => setNewCity({ ...newCity, cost: e.target.value })} />
                 <button onClick={handleAddCity} className="btn-primary px-6 py-3 rounded-xl text-sm font-bold">إضافة</button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {dbCities.map(c => (
                   <div key={c.id} className="bg-white/5 px-3 py-2 rounded-lg flex items-center justify-between gap-2 text-xs">
-                    <button onClick={() => deleteCity(c.id)} className="text-red-400"><X size={14}/></button>
+                    <button onClick={() => deleteCity(c.id)} className="text-red-400"><X size={14} /></button>
                     <div className="text-right">
                       <span className="font-bold text-luxury-cream block">{c.name}</span>
                       <span className={`text-[10px] ${c.shipping_cost === 0 ? 'text-green-400' : 'text-luxury-beige'}`}>{c.shipping_cost === 0 ? "مجاني" : `${c.shipping_cost} د.ل`}</span>
@@ -264,19 +245,18 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* PRODUCTS */}
         {activeTab === "products" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center flex-row-reverse">
               <h1 className="text-2xl md:text-3xl font-serif">المنتجات</h1>
-              <button onClick={openAddModal} className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"><Plus size={16}/> إضافة</button>
+              <button onClick={openAddModal} className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"><Plus size={16} /> إضافة</button>
             </div>
             <div className="glass-card rounded-2xl border border-white/5 overflow-hidden divide-y divide-white/5">
               {dbProducts.map(p => (
                 <div key={p.id} className="p-4 flex items-center justify-between gap-4">
                   <div className="flex gap-1">
-                    <button onClick={async () => { if(confirm("حذف؟")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="text-red-400/50 hover:text-red-400 p-2"><Trash2 size={18}/></button>
-                    <button onClick={() => openEditModal(p)} className="text-blue-400/50 hover:text-blue-400 p-2"><Edit size={18}/></button>
+                    <button onClick={async () => { if (confirm("حذف؟")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="text-red-400/50 hover:text-red-400 p-2"><Trash2 size={18} /></button>
+                    <button onClick={() => openEditModal(p)} className="text-blue-400/50 hover:text-blue-400 p-2"><Edit size={18} /></button>
                   </div>
                   <div className="flex-1 text-right min-w-0">
                     <p className="font-bold text-sm truncate">{p.name}</p>
@@ -308,7 +288,7 @@ export default function AdminPage() {
                     <p><span className="opacity-40 text-xs">الهاتف:</span> <span dir="ltr" className="inline-block">{o.phone}</span></p>
                     <p><span className="opacity-40 text-xs">العنوان:</span> {o.city} - {o.address}</p>
                     <div className="pt-2 mt-2 border-t border-white/5">
-                       {o.items?.map((item: any, idx: number) => (<p key={idx} className="text-xs opacity-70">• {item.name} {item.selectedColor && <span className="text-luxury-beige font-bold">(اللون: {item.selectedColor})</span>}</p>))}
+                      {o.items?.map((item: any, idx: number) => (<p key={idx} className="text-xs opacity-70">• {item.name} {item.selectedColor && <span className="text-luxury-beige font-bold">(اللون: {item.selectedColor})</span>}</p>))}
                     </div>
                     <p className="font-bold pt-2">الإجمالي: <span className="gold-gradient-text">{formatPrice(o.total_amount || o.total_price)}</span></p>
                   </div>
@@ -323,27 +303,25 @@ export default function AdminPage() {
         {navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id as AdminTab)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-20 transition-colors ${activeTab === item.id ? "text-luxury-beige" : "text-white/40"}`}><item.icon size={22} /><span className="text-[10px]">{item.label}</span></button>))}
       </div>
 
-      {/* MODAL */}
       <AnimatePresence>
         {showAddProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/95 backdrop-blur-xl">
             <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-dark-900 border border-white/10 p-6 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex flex-row-reverse justify-between items-center mb-6">
                 <h2 className="text-xl font-serif gold-gradient-text">{editingId ? "تعديل المنتج" : "إضافة قطعة"}</h2>
-                <button onClick={() => setShowAddProduct(false)}><X/></button>
+                <button onClick={() => setShowAddProduct(false)}><X /></button>
               </div>
               <form onSubmit={saveProduct} className="space-y-4 text-right">
-                <input placeholder="اسم القطعة" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" value={productData.name} onChange={e => setProductData({...productData, name: e.target.value})} />
+                <input placeholder="اسم القطعة" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" value={productData.name} onChange={e => setProductData({ ...productData, name: e.target.value })} />
                 <div className="grid grid-cols-2 gap-4">
-                  <select className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 text-sm" value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})}>
+                  <select className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 text-sm" value={productData.category} onChange={e => setProductData({ ...productData, category: e.target.value })}>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <input type="number" placeholder="السعر" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} />
+                  <input type="number" placeholder="السعر" required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5" value={productData.price} onChange={e => setProductData({ ...productData, price: e.target.value })} />
                 </div>
-                <textarea placeholder="الوصف..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-24" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} />
-                
+                <textarea placeholder="الوصف..." required className="text-right w-full bg-dark-800 p-4 rounded-xl outline-none border border-white/5 h-24" value={productData.description} onChange={e => setProductData({ ...productData, description: e.target.value })} />
                 <div className="bg-dark-800/50 p-4 rounded-2xl border border-luxury-beige/10 space-y-4">
-                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm"><span>اختاري الألوان المتوفرة</span><Palette size={16}/></div>
+                  <div className="flex items-center justify-end gap-2 text-luxury-beige text-sm"><span>اختاري الألوان المتوفرة</span><Palette size={16} /></div>
                   <div className="flex flex-wrap gap-2 justify-end">
                     {availableColors.map(color => (
                       <button type="button" key={color.name} onClick={() => toggleColor(color.name)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-xs font-bold ${productData.colors.includes(color.name) ? 'border-luxury-beige bg-luxury-beige/10 scale-105' : 'border-white/5 opacity-60'}`}>
@@ -360,24 +338,22 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-3 gap-3">
                   <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center overflow-hidden">
-                    {productData.image ? <img src={productData.image} className="w-full h-full object-cover"/> : <Upload size={18} className="text-luxury-beige"/>}
-                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'main')}/>
+                    {productData.image ? <img src={productData.image} className="w-full h-full object-cover" /> : <Upload size={18} className="text-luxury-beige" />}
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'main')} />
                   </div>
                   <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center">
-                    <ImageIcon size={18} className="text-luxury-beige"/><span className="text-[8px] opacity-40 mt-1">معرض ({productData.images.length})</span>
-                    <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'gallery')}/>
+                    <ImageIcon size={18} className="text-luxury-beige" /><span className="text-[8px] opacity-40 mt-1">معرض ({productData.images.length})</span>
+                    <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'gallery')} />
                   </div>
                   <div className="relative h-24 bg-dark-800 rounded-xl border border-dashed border-white/20 flex items-center justify-center">
-                    {productData.videos.length > 0 ? <CheckCircle2 className="text-green-500"/> : <Film size={18} className="text-luxury-beige"/>}
-                    <input type="file" accept="video/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'video')}/>
+                    {productData.videos.length > 0 ? <CheckCircle2 className="text-green-500" /> : <Film size={18} className="text-luxury-beige" />}
+                    <input type="file" accept="video/*" className="absolute inset-0 opacity-0" onChange={e => handleFileUpload(e, 'video')} />
                   </div>
                 </div>
-
                 <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                  {isSubmitting ? <Loader2 className="animate-spin"/> : (editingId ? "حفظ التعديلات" : "نشر المنتج")}
+                  {isSubmitting ? <Loader2 className="animate-spin" /> : (editingId ? "حفظ التعديلات" : "نشر المنتج")}
                 </button>
               </form>
             </motion.div>

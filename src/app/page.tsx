@@ -6,6 +6,7 @@ import FashionTips from "@/components/FashionTips";
 import NewsSection from "@/components/NewsSection";
 import AboutSection from "@/components/AboutSection";
 import NewArrivals from "@/components/NewArrivals";
+import BestSellers from "@/components/BestSellers";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
       <Hero />
       <Categories />
       <NewArrivals />
+      <BestSellers />
       <FeaturedProducts />
       <FashionTrends />
       <FashionTips />

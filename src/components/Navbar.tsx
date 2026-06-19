@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import { ShoppingBag, Menu, X, Crown, Search, Heart, Sparkles } from "lucide-react";
+import { ShoppingBag, Menu, X, Crown, Search, Heart, Sparkles, Film } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { supabase } from "@/lib/supabase";
@@ -47,37 +47,21 @@ function PromoBanner({ onClose }: { onClose: () => void }) {
   return (
     <div className="relative bg-gradient-to-r from-luxury-beige/20 via-amber-900/30 to-luxury-beige/20 border-b border-luxury-beige/10">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{ x: ["-100%", "100%"] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-luxury-beige/10 to-transparent"
-        />
+        <motion.div animate={{ x: ["-100%", "100%"] }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }} className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-luxury-beige/10 to-transparent" />
       </div>
-
       <div className="relative max-w-[1500px] mx-auto px-4 py-2 flex items-center justify-between">
         <button onClick={onClose} className="text-luxury-beige/40 hover:text-luxury-beige transition-colors p-1 shrink-0 z-20 relative">
           <X className="w-3.5 h-3.5" />
         </button>
-
         <div className="flex-1 overflow-hidden text-center">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex % allMessages.length}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -20, opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="flex items-center justify-center gap-2"
-            >
+            <motion.div key={currentIndex % allMessages.length} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} transition={{ duration: 0.5 }} className="flex items-center justify-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-luxury-beige shrink-0" />
-              <span className="text-[11px] md:text-xs font-bold text-luxury-cream/80 tracking-wide">
-                {allMessages[currentIndex % allMessages.length]}
-              </span>
+              <span className="text-[11px] md:text-xs font-bold text-luxury-cream/80 tracking-wide">{allMessages[currentIndex % allMessages.length]}</span>
               <Sparkles className="w-3.5 h-3.5 text-luxury-beige shrink-0 hidden sm:block" />
             </motion.div>
           </AnimatePresence>
         </div>
-
         <Link href="/shop" className="shrink-0 text-[10px] md:text-[11px] font-bold text-dark-900 bg-luxury-beige hover:bg-luxury-gold px-3 py-1 rounded-full transition-all hover:scale-105 shadow-sm shadow-luxury-beige/20 z-20 relative">
           تسوقي الآن
         </Link>
@@ -112,6 +96,7 @@ export default function Navbar() {
   const navLinks = [
     { name: "الرئيسية", href: "/" },
     { name: "المتجر", href: "/shop" },
+    { name: "ريلز", href: "/reels" },
     { name: "تتبع الطلب", href: "/track" },
     { name: "من نحن", href: "/#about" },
   ];
@@ -122,13 +107,7 @@ export default function Navbar() {
     <>
       <AnimatePresence>
         {showBanner && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-0 left-0 right-0 z-[60] overflow-hidden"
-          >
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="fixed top-0 left-0 right-0 z-[60] overflow-hidden">
             <PromoBanner onClose={() => setShowBanner(false)} />
           </motion.div>
         )}
@@ -168,12 +147,10 @@ export default function Navbar() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* زر البحث */}
               <motion.button onClick={openSearch} whileHover={{ scale: 1.1, y: -2 }} whileTap={{ scale: 0.9 }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-dark-800/50 hover:bg-luxury-beige/10 text-luxury-cream/50 hover:text-luxury-beige transition-all duration-300 border border-transparent hover:border-luxury-beige/20">
                 <Search className="w-4 h-4" />
               </motion.button>
 
-              {/* ❤️ زر المفضلة مع عداد */}
               <Link href="/wishlist">
                 <motion.button whileHover={{ scale: 1.1, y: -2 }} whileTap={{ scale: 0.9 }} className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl bg-dark-800/50 hover:bg-red-500/10 text-luxury-cream/50 hover:text-red-400 transition-all duration-300 border border-transparent hover:border-red-500/20 relative">
                   <Heart className="w-4 h-4" />
@@ -187,7 +164,6 @@ export default function Navbar() {
                 </motion.button>
               </Link>
 
-              {/* زر السلة */}
               <motion.button onClick={() => setIsCartOpen(true)} whileHover={{ scale: 1.1, y: -2 }} whileTap={{ scale: 0.9 }} className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-luxury-beige/10 hover:bg-luxury-beige/20 text-luxury-beige transition-all duration-300 border border-luxury-beige/20 hover:border-luxury-beige/40">
                 <ShoppingBag className="w-4 h-4" />
                 <AnimatePresence>
@@ -199,7 +175,6 @@ export default function Navbar() {
                 </AnimatePresence>
               </motion.button>
 
-              {/* زر القائمة للموبايل */}
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-dark-800/50 text-luxury-cream border border-luxury-beige/10">
                 <AnimatePresence mode="wait">
                   {mobileOpen ? <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}><X className="w-5 h-5" /></motion.div> : <motion.div key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}><Menu className="w-5 h-5" /></motion.div>}
@@ -212,7 +187,6 @@ export default function Navbar() {
 
       <div className={`${showBanner ? "h-28" : "h-24"}`} />
 
-      {/* القائمة الجانبية للموبايل */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="fixed inset-0 z-40 lg:hidden">
@@ -225,7 +199,15 @@ export default function Navbar() {
                   </motion.a>
                 ))}
 
-                {/* رابط المفضلة في قائمة الموبايل */}
+                {/* رابط الريلز */}
+                <Link href="/reels" onClick={() => setMobileOpen(false)}>
+                  <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.42 }} className="text-2xl font-serif text-luxury-cream/70 hover:text-pink-400 transition-colors py-4 border-b border-luxury-beige/5 flex items-center justify-between">
+                    <Film size={20} className="text-pink-400" />
+                    <span>🎬 ريلز المنتجات</span>
+                  </motion.div>
+                </Link>
+
+                {/* المفضلة */}
                 <Link href="/wishlist" onClick={() => setMobileOpen(false)}>
                   <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.45 }} className="text-2xl font-serif text-luxury-cream/70 hover:text-red-400 transition-colors py-4 border-b border-luxury-beige/5 flex items-center justify-between">
                     <Heart size={20} className="text-red-400" />
@@ -233,7 +215,7 @@ export default function Navbar() {
                   </motion.div>
                 </Link>
 
-                {/* زر السلة */}
+                {/* السلة */}
                 <motion.button onClick={() => { setMobileOpen(false); setIsCartOpen(true); }} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="text-2xl font-serif text-luxury-cream/70 hover:text-luxury-beige transition-colors py-4 border-b border-luxury-beige/5 text-right flex items-center justify-between">
                   <ShoppingBag size={20} />
                   <span>السلة ({totalItems})</span>

@@ -12,6 +12,7 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import Confetti from "@/components/Confetti";
 
 type CheckoutStep = "cart" | "shipping" | "confirmation";
 
@@ -77,7 +78,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // ====== إرسال إشعار واتساب تلقائي ======
   const sendWhatsAppNotification = async (orderID: string) => {
     try {
       await fetch("/api/notify", {
@@ -116,7 +116,6 @@ export default function CheckoutPage() {
     const orderID = `#${newOrderNum}`;
 
     try {
-      // 1️⃣ حفظ الطلب في Supabase
       const { error } = await supabase.from('orders').insert([{
         order_number: orderID,
         customer_name: formData.fullName,
@@ -131,7 +130,6 @@ export default function CheckoutPage() {
       }]);
       if (error) throw error;
 
-      // 2️⃣ إشعار تيليجرام
       const botToken = "8221648331:AAHQQT-1nEGbTHksAyAK5BVU4r8mqX61JOk";
       const chatId = "8459612624";
       const telegramItems = items.map((item) => `- ${item.name} (${item.quantity})${item.selectedColor ? ` - ${item.selectedColor}` : ''}`).join("\n");
@@ -141,10 +139,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({ chat_id: chatId, text: telegramMessage }),
       });
 
-      // 3️⃣ إشعار واتساب تلقائي (الجديد!)
       await sendWhatsAppNotification(orderID);
 
-      // 4️⃣ فتح واتساب للزبون (الطريقة القديمة تبقى)
       const detailedItemsList = items.map((item) => {
         let line = `- ${item.name} (الكمية: ${item.quantity})`;
         if (item.selectedColor) line += ` - اللون: ${item.selectedColor}`;
@@ -162,7 +158,6 @@ export default function CheckoutPage() {
         `الإجمالي: ${formatPrice(finalPrice)}`;
       window.open(`https://wa.me/218935364926?text=${whatsappMessage}`, "_blank");
 
-      // 5️⃣ إظهار صفحة التأكيد
       setOrderNumber(newOrderNum);
       setStep("confirmation");
       clearCart();
@@ -174,18 +169,56 @@ export default function CheckoutPage() {
     }
   };
 
+  // ====== صفحة التأكيد مع Confetti ======
   if (step === "confirmation") {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center section-padding">
+        {/* 💫 تأثير الاحتفال */}
+        <Confetti isActive={true} />
+
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card p-12 max-w-lg w-full text-center border-luxury-beige/20">
-          <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-8"><PackageCheck className="text-green-500" size={48} /></div>
-          <h1 className="font-serif text-3xl font-bold gold-gradient-text mb-4">تم استلام طلبكِ بنجاح!</h1>
-          <p className="text-luxury-cream/60 mb-8 leading-relaxed">شكراً لثقتكِ بمتجر هبة الرحمن. سنتواصل معكِ لتأكيد التوصيل.</p>
-          <div className="bg-dark-800 p-6 rounded-2xl mb-8 border border-white/5">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+            className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-8"
+          >
+            <PackageCheck className="text-green-500" size={48} />
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="font-serif text-3xl font-bold gold-gradient-text mb-4"
+          >
+            تم استلام طلبكِ بنجاح! 🎉
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="text-luxury-cream/60 mb-8 leading-relaxed"
+          >
+            شكراً لثقتكِ بمتجر هبة الرحمن. سنتواصل معكِ لتأكيد التوصيل.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.9 }}
+            className="bg-dark-800 p-6 rounded-2xl mb-8 border border-white/5"
+          >
             <p className="text-xs text-white/30 uppercase tracking-widest mb-2">رقم الطلب</p>
             <p className="font-mono text-3xl font-bold text-luxury-beige">#{orderNumber}</p>
+            <p className="text-[10px] text-white/20 mt-2">احتفظي بهذا الرقم لتتبع طلبكِ</p>
+          </motion.div>
+          <div className="flex gap-3">
+            <Link href="/track" className="flex-1 border border-luxury-beige/20 text-luxury-beige py-4 rounded-xl text-center font-bold hover:bg-luxury-beige/5 transition-colors">
+              تتبع الطلب
+            </Link>
+            <Link href="/" className="flex-1 btn-primary py-4 text-center">
+              العودة للرئيسية
+            </Link>
           </div>
-          <Link href="/" className="btn-primary block w-full py-4 text-center">العودة للرئيسية</Link>
         </motion.div>
       </div>
     );
@@ -277,7 +310,6 @@ export default function CheckoutPage() {
             </AnimatePresence>
           </div>
 
-          {/* ملخص الطلب */}
           <div className="lg:col-span-1">
             <div className="glass-card p-6 md:p-8 lg:sticky lg:top-28 border-luxury-beige/10">
               <h3 className="font-serif text-lg md:text-xl mb-6 text-right">ملخص الحقيبة</h3>

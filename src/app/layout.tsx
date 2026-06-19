@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
-import AutoChat from "@/components/AutoChat"; // ✅ السطر الجديد الاول: استيراد الشات
+import AutoChat from "@/components/AutoChat";
 
 export const metadata: Metadata = {
   title: "هبة الرحمن | وجهتكِ العالمية للإكسسوارات الفاخرة 2026",
@@ -34,19 +35,17 @@ export default function RootLayout({
     <html lang="ar" dir="rtl">
       <body className="bg-[#050505] text-luxury-cream min-h-screen">
         <CartProvider>
-          {/* العناصر المشتركة (تظهر في جميع الصفحات) */}
-          <Navbar />
-          <CartDrawer />
-          
-          {/* محتوى الصفحات المتغير */}
-          <main className="relative overflow-hidden">
-            {children}
-          </main>
-          
-          {/* الفوتر (يظهر في جميع الصفحات) */}
-          <Footer />
-
-          <AutoChat /> {/* ✅ السطر الجديد الثاني: اظهار الشات في كل الصفحات */}
+          <WishlistProvider>
+            <Navbar />
+            <CartDrawer />
+            
+            <main className="relative overflow-hidden">
+              {children}
+            </main>
+            
+            <Footer />
+            <AutoChat />
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>

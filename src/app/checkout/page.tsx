@@ -5,12 +5,12 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Truck, Check, Lock, 
+  Truck, Check, Lock,
   Minus, Plus, Trash2, Loader2, MessageCircle, PackageCheck
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
-import { supabase } from "@/lib/supabase"; 
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 type CheckoutStep = "cart" | "shipping" | "confirmation";
@@ -23,13 +23,13 @@ export default function CheckoutPage() {
   const { items, totalPrice, totalItems, removeFromCart, updateQuantity, clearCart } = useCart();
   const [step, setStep] = useState<CheckoutStep>("cart");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [promoCode, setPromoCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [promoMessage, setPromoMessage] = useState({ text: "", type: "" });
   const [isCheckingPromo, setIsCheckingPromo] = useState(false);
-  
-  const [dbCities, setDbCities] = useState<any[]>([]); 
+
+  const [dbCities, setDbCities] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     fullName: "", phone: "", address: "", city: "",
@@ -77,6 +77,34 @@ export default function CheckoutPage() {
     }
   };
 
+  // ====== إرسال إشعار واتساب تلقائي ======
+  const sendWhatsAppNotification = async (orderID: string) => {
+    try {
+      await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderNumber: orderID,
+          customerName: formData.fullName,
+          phone: formData.phone,
+          city: formData.city,
+          address: formData.address,
+          items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            selectedColor: item.selectedColor,
+            selectedSize: item.selectedSize,
+          })),
+          total: finalPrice,
+          shipping: shippingCost,
+          discount: discountPercent,
+        }),
+      });
+    } catch (err) {
+      console.error("WhatsApp notification failed:", err);
+    }
+  };
+
   const handleCompleteOrder = async () => {
     if (!formData.fullName || !formData.phone || !formData.address) {
       alert("يرجى تعبئة الاسم ورقم الهاتف والعنوان");
@@ -88,6 +116,7 @@ export default function CheckoutPage() {
     const orderID = `#${newOrderNum}`;
 
     try {
+      // 1️⃣ حفظ الطلب في Supabase
       const { error } = await supabase.from('orders').insert([{
         order_number: orderID,
         customer_name: formData.fullName,
@@ -97,18 +126,12 @@ export default function CheckoutPage() {
         total_amount: finalPrice,
         total_price: finalPrice,
         notes: `التوصيل: ${shippingCost === 0 ? 'مجاني' : shippingCost + ' د.ل'} ${discountPercent > 0 ? `| خصم: ${promoCode}` : ""}`,
-        items: items, 
+        items: items,
         status: 'جاري التجهيز'
       }]);
       if (error) throw error;
 
-      const detailedItemsList = items.map((item) => {
-        let line = `- ${item.name} (الكمية: ${item.quantity})`;
-        if (item.selectedColor) line += ` - اللون: ${item.selectedColor}`;
-        if (item.selectedSize) line += ` - المقاس: ${item.selectedSize}`;
-        return line;
-      }).join("%0A");
-
+      // 2️⃣ إشعار تيليجرام
       const botToken = "8221648331:AAHQQT-1nEGbTHksAyAK5BVU4r8mqX61JOk";
       const chatId = "8459612624";
       const telegramItems = items.map((item) => `- ${item.name} (${item.quantity})${item.selectedColor ? ` - ${item.selectedColor}` : ''}`).join("\n");
@@ -118,7 +141,18 @@ export default function CheckoutPage() {
         body: JSON.stringify({ chat_id: chatId, text: telegramMessage }),
       });
 
-      const whatsappMessage = 
+      // 3️⃣ إشعار واتساب تلقائي (الجديد!)
+      await sendWhatsAppNotification(orderID);
+
+      // 4️⃣ فتح واتساب للزبون (الطريقة القديمة تبقى)
+      const detailedItemsList = items.map((item) => {
+        let line = `- ${item.name} (الكمية: ${item.quantity})`;
+        if (item.selectedColor) line += ` - اللون: ${item.selectedColor}`;
+        if (item.selectedSize) line += ` - المقاس: ${item.selectedSize}`;
+        return line;
+      }).join("%0A");
+
+      const whatsappMessage =
         `🏛️ طلب جديد%0A%0A` +
         `الاسم: ${formData.fullName}%0A` +
         `الهاتف: ${formData.phone}%0A` +
@@ -128,6 +162,7 @@ export default function CheckoutPage() {
         `الإجمالي: ${formatPrice(finalPrice)}`;
       window.open(`https://wa.me/218935364926?text=${whatsappMessage}`, "_blank");
 
+      // 5️⃣ إظهار صفحة التأكيد
       setOrderNumber(newOrderNum);
       setStep("confirmation");
       clearCart();
@@ -160,14 +195,14 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-[#050505] text-luxury-cream pt-24 md:pt-28 pb-20">
       <div className="section-padding max-w-[1200px] mx-auto">
         <h1 className="font-serif text-3xl md:text-4xl font-bold mb-8 md:mb-12 italic text-right">إتمام <span className="gold-gradient-text">الشراء</span></h1>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
           <div className="lg:col-span-2 space-y-6">
             <AnimatePresence mode="wait">
               {step === "cart" && (
                 <div className="space-y-4">
                   {items.length === 0 ? (
-                     <div className="glass-card p-12 text-center"><p className="text-luxury-cream/40 text-lg mb-4">الحقيبة فارغة</p><Link href="/" className="btn-primary inline-block">تصفحي المنتجات</Link></div>
+                    <div className="glass-card p-12 text-center"><p className="text-luxury-cream/40 text-lg mb-4">الحقيبة فارغة</p><Link href="/" className="btn-primary inline-block">تصفحي المنتجات</Link></div>
                   ) : (
                     <>
                       {items.map((item) => {
@@ -178,7 +213,7 @@ export default function CheckoutPage() {
                             <div className="flex-1 min-w-0 text-right">
                               <div className="flex justify-between items-start mb-1">
                                 <h3 className="font-bold text-sm md:text-base">{item.name}</h3>
-                                <button onClick={() => removeFromCart(itemKey)} className="text-red-400/30 hover:text-red-400"><Trash2 size={18}/></button>
+                                <button onClick={() => removeFromCart(itemKey)} className="text-red-400/30 hover:text-red-400"><Trash2 size={18} /></button>
                               </div>
                               <div className="text-xs text-luxury-cream/40 mb-3">
                                 {item.selectedColor && <span className="ml-2">اللون: <span className="text-luxury-beige">{item.selectedColor}</span></span>}
@@ -186,9 +221,9 @@ export default function CheckoutPage() {
                               </div>
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3 bg-dark-800 rounded-lg p-1">
-                                    <button onClick={() => updateQuantity(itemKey, item.quantity - 1)} className="p-1 hover:text-luxury-beige"><Minus size={14}/></button>
-                                    <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(itemKey, item.quantity + 1)} className="p-1 hover:text-luxury-beige"><Plus size={14}/></button>
+                                  <button onClick={() => updateQuantity(itemKey, item.quantity - 1)} className="p-1 hover:text-luxury-beige"><Minus size={14} /></button>
+                                  <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
+                                  <button onClick={() => updateQuantity(itemKey, item.quantity + 1)} className="p-1 hover:text-luxury-beige"><Plus size={14} /></button>
                                 </div>
                                 <p className="font-bold text-luxury-beige text-sm md:text-base">{formatPrice(item.price * item.quantity)}</p>
                               </div>
@@ -207,32 +242,28 @@ export default function CheckoutPage() {
                   <h2 className="text-xl md:text-2xl font-serif mb-6">معلومات الاستلام</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                        <label className="text-xs uppercase opacity-40">الاسم الكامل *</label>
-                        <input type="text" name="fullName" required className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 focus:border-luxury-beige/40 outline-none" onChange={handleInputChange} />
+                      <label className="text-xs uppercase opacity-40">الاسم الكامل *</label>
+                      <input type="text" name="fullName" required className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 focus:border-luxury-beige/40 outline-none" onChange={handleInputChange} />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs uppercase opacity-40">رقم الهاتف *</label>
-                        <input type="tel" name="phone" required className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 focus:border-luxury-beige/40 outline-none" onChange={handleInputChange} />
+                      <label className="text-xs uppercase opacity-40">رقم الهاتف *</label>
+                      <input type="tel" name="phone" required className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 focus:border-luxury-beige/40 outline-none" onChange={handleInputChange} />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs uppercase opacity-40">المدينة *</label>
-                        {/* 🛑 القائمة الآن تعرض أسماء المدن فقط بشكل نظيف */}
-                        <select name="city" value={formData.city} className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 outline-none" onChange={handleInputChange}>
-                            {dbCities.length === 0 && <option>جاري تحميل المدن...</option>}
-                            {dbCities.map(city => (
-                              <option key={city.id} value={city.name}>
-                                {city.name}
-                              </option>
-                            ))}
-                        </select>
+                      <label className="text-xs uppercase opacity-40">المدينة *</label>
+                      <select name="city" value={formData.city} className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 outline-none" onChange={handleInputChange}>
+                        {dbCities.length === 0 && <option>جاري تحميل المدن...</option>}
+                        {dbCities.map(city => (
+                          <option key={city.id} value={city.name}>{city.name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs uppercase opacity-40">العنوان التفصيلي *</label>
-                        <input type="text" name="address" required className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 focus:border-luxury-beige/40 outline-none" onChange={handleInputChange} />
+                      <label className="text-xs uppercase opacity-40">العنوان التفصيلي *</label>
+                      <input type="text" name="address" required className="text-right w-full bg-dark-800 p-4 rounded-xl border border-white/5 focus:border-luxury-beige/40 outline-none" onChange={handleInputChange} />
                     </div>
                   </div>
 
-                  {/* تنبيه التوصيل (يظهر السعر هنا تلقائياً بعد اختيار المدينة) */}
                   <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-bold ${shippingCost === 0 ? 'bg-green-500/10 text-green-400' : 'bg-luxury-beige/10 text-luxury-beige'}`}>
                     <Truck className="w-5 h-5" />
                     {shippingCost === 0 ? `🎉 رائع! التوصيل مجاني إلى ${formData.city}` : `رسوم التوصيل إلى ${formData.city} هي ${shippingCost} د.ل`}
@@ -250,7 +281,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-1">
             <div className="glass-card p-6 md:p-8 lg:sticky lg:top-28 border-luxury-beige/10">
               <h3 className="font-serif text-lg md:text-xl mb-6 text-right">ملخص الحقيبة</h3>
-              
+
               <div className="py-4 border-t border-white/5">
                 <label className="text-xs opacity-40 mb-2 block text-right">لديكِ كود خصم؟</label>
                 <div className="flex gap-2">
@@ -260,7 +291,6 @@ export default function CheckoutPage() {
                 {promoMessage.text && <p className={`text-[10px] mt-2 text-right ${promoMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{promoMessage.text}</p>}
               </div>
 
-              {/* تفاصيل الحساب (هنا يظهر سعر التوصيل) */}
               <div className="border-t border-white/5 pt-4 space-y-3 text-sm">
                 <div className="flex justify-between opacity-60">
                   <span>{formatPrice(totalPrice)}</span>

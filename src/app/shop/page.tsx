@@ -4,12 +4,13 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Star, Search, Loader2, Palette } from "lucide-react";
+import { ShoppingCart, Star, Search, Loader2, Palette, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { formatPrice } from "@/lib/utils";
 import { Product } from "@/types";
 
@@ -20,6 +21,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("الكل");
   const [searchQuery, setSearchQuery] = useState("");
   const { addToCart, setIsCartOpen } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
   useEffect(() => {
     async function fetchProducts() {
@@ -56,7 +58,7 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-luxury-cream pt-24 md:pt-32 pb-20">
       <div className="section-padding max-w-[1500px] mx-auto">
-        
+
         <div className="text-center mb-10">
           <h1 className="font-serif text-4xl md:text-6xl font-bold mb-4">
             تسوقي <span className="gold-gradient-text">مجموعتنا</span>
@@ -131,6 +133,29 @@ export default function ShopPage() {
                         {product.badge}
                       </div>
                     )}
+
+                    {/* ❤️ زر المفضلة */}
+                    <button
+                      onClick={() => toggleWishlist({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.image,
+                        category: product.category,
+                        rating: product.rating,
+                      })}
+                      className="absolute top-2 left-2 md:top-3 md:left-3 w-8 h-8 md:w-9 md:h-9 rounded-full 
+                                 bg-dark-900/50 backdrop-blur-sm flex items-center justify-center z-10 
+                                 transition-all hover:scale-110 active:scale-90"
+                    >
+                      <Heart
+                        className={`w-4 h-4 transition-all duration-300 ${
+                          isInWishlist(product.id)
+                            ? "text-red-400 fill-red-400 scale-110"
+                            : "text-white/40 hover:text-red-300"
+                        }`}
+                      />
+                    </button>
 
                     {product.colors && product.colors.length > 0 && (
                       <div className="absolute bottom-2 left-2 z-10 bg-dark-900/60 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">

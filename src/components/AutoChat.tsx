@@ -468,7 +468,7 @@ export default function AutoChat() {
                   <h3 className="text-luxury-cream font-bold text-sm">مساعدة هبة الرحمن</h3>
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-green-400 text-[10px]">متصلة الآن • 1000+ سؤال</span>
+                    <span className="text-green-400 text-[10px]">متصلة الآن • + سؤال</span>
                   </div>
                 </div>
               </div>
@@ -527,7 +527,7 @@ export default function AutoChat() {
                   <Send className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-center text-[9px] text-white/15 mt-2">مساعدة ذكية • 1000+ سؤال • متجر هبة الرحمن</p>
+              <p className="text-center text-[9px] text-white/15 mt-2">مساعدة ذكية •   • متجر هبة الرحمن</p>
             </div>
           </motion.div>
         )}

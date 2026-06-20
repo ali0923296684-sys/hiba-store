@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Heart, Volume2, VolumeX, Loader2, Film, Share2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
@@ -15,71 +15,77 @@ export default function ReelsPage() {
   const [loading, setLoading] = useState(true);
   const [direction, setDirection] = useState(0);
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const touchStartTime = useRef(0);
   const { toggleWishlist, isInWishlist } = useWishlist();
 
   useEffect(() => {
     async function fetchReels() {
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
       if (data) {
-        const withVideos = data.filter((p: any) => p.videos && p.videos.length > 0);
-        setReels(withVideos);
+        setReels(data.filter((p: any) => p.videos && p.videos.length > 0));
       }
       setLoading(false);
     }
     fetchReels();
   }, []);
 
-  // تشغيل/إيقاف الفيديو عند تغيير الريل
+  // منع السحب الافتراضي (Pull to Refresh)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const prevent = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+
+    el.addEventListener("touchmove", prevent, { passive: false });
+    return () => el.removeEventListener("touchmove", prevent);
+  }, []);
+
+  // تشغيل/إيقاف الفيديو
   useEffect(() => {
     Object.values(videoRefs.current).forEach((v) => {
       if (v) { v.pause(); v.currentTime = 0; }
     });
-    const currentVideo = videoRefs.current[currentIndex];
-    if (currentVideo) {
-      currentVideo.muted = isMuted;
-      currentVideo.play().catch(() => {});
+    const current = videoRefs.current[currentIndex];
+    if (current) {
+      current.muted = isMuted;
+      current.play().catch(() => {});
     }
   }, [currentIndex, isMuted]);
 
   const goNext = () => {
     if (currentIndex < reels.length - 1) {
       setDirection(1);
-      setCurrentIndex((prev) => prev + 1);
+      setCurrentIndex(prev => prev + 1);
     }
   };
 
   const goPrev = () => {
     if (currentIndex > 0) {
       setDirection(-1);
-      setCurrentIndex((prev) => prev - 1);
+      setCurrentIndex(prev => prev - 1);
     }
   };
 
-  // السحب (Swipe)
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    const threshold = 50;
-    if (info.offset.y < -threshold) {
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartY.current - e.changedTouches[0].clientY;
+    const time = Date.now() - touchStartTime.current;
+
+    // سحب سريع أو مسافة كافية
+    if (diff > 60 || (diff > 30 && time < 300)) {
       goNext();
-    } else if (info.offset.y > threshold) {
+    } else if (diff < -60 || (diff < -30 && time < 300)) {
       goPrev();
     }
   };
-
-  // اللمس على الشاشة
-  const touchStartY = useRef(0);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const diff = touchStartY.current - e.changedTouches[0].clientY;
-    if (diff > 80) goNext();
-    else if (diff < -80) goPrev();
-  };
-
-  const toggleMute = () => setIsMuted(!isMuted);
 
   const shareReel = async () => {
     const reel = reels[currentIndex];
@@ -118,25 +124,24 @@ export default function ReelsPage() {
   const currentReel = reels[currentIndex];
 
   return (
-    <div className="h-screen bg-black flex items-center justify-center overflow-hidden select-none">
-      <div
-        className="relative w-full max-w-md h-full md:h-[90vh] md:rounded-3xl overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* الفيديوهات */}
+    <div
+      ref={containerRef}
+      className="h-screen bg-black flex items-center justify-center overflow-hidden select-none touch-none"
+      style={{ overscrollBehavior: "none" }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="relative w-full max-w-md h-full md:h-[90vh] md:rounded-3xl overflow-hidden">
+
+        {/* الفيديو */}
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={currentIndex}
             custom={direction}
-            initial={{ y: direction > 0 ? "100%" : "-100%", opacity: 0.5 }}
+            initial={{ y: direction > 0 ? "100%" : "-100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: direction > 0 ? "-100%" : "100%", opacity: 0.5 }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.2}
-            onDragEnd={handleDragEnd}
+            exit={{ y: direction > 0 ? "-100%" : "100%", opacity: 0 }}
+            transition={{ type: "tween", duration: 0.3, ease: "easeInOut" }}
             className="absolute inset-0"
           >
             <video
@@ -155,7 +160,7 @@ export default function ReelsPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none z-10" />
 
         {/* الهيدر */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20 safe-area-top">
+        <div className="absolute top-0 left-0 right-0 p-4 pt-12 flex items-center justify-between z-20">
           <Link href="/" className="text-white/70 text-sm font-bold bg-black/30 px-3 py-1.5 rounded-full backdrop-blur-sm">
             ✕ رجوع
           </Link>
@@ -169,15 +174,10 @@ export default function ReelsPage() {
         </div>
 
         {/* شريط التقدم */}
-        <div className="absolute top-14 left-3 right-3 flex gap-1 z-20">
+        <div className="absolute top-8 left-3 right-3 flex gap-1 z-20">
           {reels.map((_, i) => (
             <div key={i} className="flex-1 h-[3px] rounded-full overflow-hidden bg-white/20">
-              <motion.div
-                className="h-full rounded-full bg-white"
-                initial={{ width: "0%" }}
-                animate={{ width: i <= currentIndex ? "100%" : "0%" }}
-                transition={{ duration: 0.3 }}
-              />
+              <div className={`h-full rounded-full transition-all duration-300 ${i <= currentIndex ? "bg-white w-full" : "bg-transparent w-0"}`} />
             </div>
           ))}
         </div>
@@ -198,7 +198,6 @@ export default function ReelsPage() {
 
         {/* أزرار جانبية */}
         <div className="absolute right-3 bottom-44 flex flex-col gap-5 z-20">
-          {/* المفضلة */}
           <button
             onClick={() => toggleWishlist({
               id: currentReel.id, name: currentReel.name,
@@ -213,15 +212,13 @@ export default function ReelsPage() {
             <span className="text-white text-[10px]">❤️</span>
           </button>
 
-          {/* الصوت */}
-          <button onClick={toggleMute} className="flex flex-col items-center gap-1">
+          <button onClick={() => setIsMuted(!isMuted)} className="flex flex-col items-center gap-1">
             <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
               {isMuted ? <VolumeX size={22} className="text-white" /> : <Volume2 size={22} className="text-white" />}
             </div>
             <span className="text-white text-[10px]">{isMuted ? "🔇" : "🔊"}</span>
           </button>
 
-          {/* مشاركة */}
           <button onClick={shareReel} className="flex flex-col items-center gap-1">
             <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
               <Share2 size={20} className="text-white" />
@@ -229,7 +226,6 @@ export default function ReelsPage() {
             <span className="text-white text-[10px]">📤</span>
           </button>
 
-          {/* صورة المنتج */}
           <Link href={`/product/${currentReel.id}`}>
             <motion.div whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-xl overflow-hidden border-2 border-white/40 shadow-xl">
               <img src={currentReel.image} className="w-full h-full object-cover" />
@@ -239,27 +235,16 @@ export default function ReelsPage() {
 
         {/* معلومات المنتج */}
         <div className="absolute bottom-0 left-0 right-0 p-5 z-20 pb-8">
-          <motion.div
-            key={currentIndex}
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <motion.div key={currentIndex} initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
             <span className="text-luxury-beige text-[10px] tracking-widest uppercase bg-black/30 px-2 py-1 rounded-full backdrop-blur-sm">
               {currentReel.category}
             </span>
             <h2 className="text-white font-bold text-xl mt-2 mb-1 drop-shadow-lg">{currentReel.name}</h2>
             <p className="text-white/50 text-sm mb-4 line-clamp-2 drop-shadow-md">{currentReel.description}</p>
-
             <div className="flex items-center gap-3">
               <Link href={`/product/${currentReel.id}`} className="flex-1">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full py-3.5 rounded-2xl bg-luxury-beige text-dark-900 font-bold text-sm 
-                             flex items-center justify-center gap-2 shadow-lg shadow-luxury-beige/20"
-                >
-                  <ShoppingCart size={16} />
-                  اطلبي الآن
+                <motion.button whileTap={{ scale: 0.95 }} className="w-full py-3.5 rounded-2xl bg-luxury-beige text-dark-900 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-luxury-beige/20">
+                  <ShoppingCart size={16} />اطلبي الآن
                 </motion.button>
               </Link>
               <span className="font-serif text-2xl font-bold text-luxury-beige drop-shadow-lg">

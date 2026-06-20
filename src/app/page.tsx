@@ -8,6 +8,7 @@ import AboutSection from "@/components/AboutSection";
 import NewArrivals from "@/components/NewArrivals";
 import BestSellers from "@/components/BestSellers";
 import WhyUs from "@/components/WhyUs";
+import DeliveryMap from "@/components/DeliveryMap";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
       <NewArrivals />
       <BestSellers />
       <FeaturedProducts />
+      <DeliveryMap />
       <FashionTrends />
       <FashionTips />
       <AboutSection />

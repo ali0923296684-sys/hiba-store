@@ -14,7 +14,6 @@ import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import { Product } from "@/types";
 import ViewersCount from "@/components/ViewersCount";
-import CountdownTimer from "@/components/CountdownTimer";
 
 export default function ProductDetail() {
   const params = useParams();
@@ -89,7 +88,6 @@ export default function ProductDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
 
-          {/* المعرض */}
           <div className="space-y-3 md:space-y-4">
             <div className="relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden glass-card bg-dark-900">
               <AnimatePresence mode="wait">
@@ -116,7 +114,6 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* المعلومات */}
           <div className="space-y-4 md:space-y-6">
             <span className="text-luxury-beige text-xs md:text-sm tracking-widest uppercase">{product.category}</span>
             <h1 className="font-serif text-3xl md:text-5xl font-bold leading-tight">{product.name}</h1>
@@ -127,13 +124,9 @@ export default function ProductDetail() {
 
             <p className="text-luxury-cream/60 leading-relaxed text-sm md:text-lg">{product.description}</p>
 
-            {/* 👁️ يشاهده X شخص + ⏰ عداد تنازلي */}
-            <div className="space-y-3">
-              <ViewersCount />
-              <CountdownTimer endDate="2025-08-01T00:00:00" label="ينتهي العرض خلال" size="large" />
-            </div>
+            {/* 👁️ يشاهده X شخص */}
+            <ViewersCount />
 
-            {/* الألوان */}
             {product.colors && product.colors.length > 0 && (
               <div className="space-y-3 py-2">
                 <div className="flex justify-between items-center">
@@ -158,7 +151,6 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* المقاسات */}
             {product.sizes && product.sizes.length > 0 && (
               <div className="space-y-3 py-2">
                 <p className="text-sm font-medium text-luxury-cream">المقاس: <span className="text-luxury-beige font-bold">{selectedSize || "اختاري المقاس"}</span></p>
@@ -170,7 +162,6 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* الأزرار */}
             <div className="pt-4 space-y-3">
               <button onClick={handleAddToCart} disabled={addedToCart} className={`w-full py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${addedToCart ? "bg-green-600" : "bg-luxury-beige text-dark-900 hover:bg-luxury-gold"}`}>
                 {addedToCart ? <Check size={22} /> : <ShoppingCart size={22} />}
@@ -184,7 +175,6 @@ export default function ProductDetail() {
               </Link>
             </div>
 
-            {/* Trust Badges */}
             <div className="grid grid-cols-3 gap-4 pt-8 border-t border-white/5">
               <div className="text-center"><Truck className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">توصيل سريع</span></div>
               <div className="text-center"><Shield className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">أصلي 100%</span></div>
@@ -194,7 +184,6 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* المنتجات المشابهة */}
       {relatedProducts.length > 0 && (
         <div className="bg-white/[0.02] py-16 md:py-20 border-t border-white/5">
           <div className="section-padding max-w-[1500px] mx-auto">

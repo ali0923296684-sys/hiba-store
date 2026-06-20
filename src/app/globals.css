@@ -250,3 +250,69 @@
   0%, 100% { transform: scale(1); opacity: 0.5; }
   50% { transform: scale(1.5); opacity: 0; }
 }
+/* ===== تحسينات إضافية للسلاسة على الموبايل ===== */
+
+/* تسريع GPU للعناصر المتحركة */
+.gpu-accelerated,
+[class*="animate-"],
+[class*="transition-"] {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* منع الزوم عند الضغط على input في iOS */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Safe Area للأجهزة ذات النوتش */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* تحسين أداء الصور */
+img, video {
+  content-visibility: auto;
+}
+
+/* تحسين اللمس */
+@media (hover: none) {
+  .glass-card-hover:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* تقليل الأنيميشن لمن يفضل ذلك */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* تحسين الخطوط على الشاشات الصغيرة */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .glass-card, .glass-card-hover {
+    border-radius: 16px;
+  }
+}

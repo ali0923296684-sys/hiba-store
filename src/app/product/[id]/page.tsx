@@ -5,27 +5,27 @@ import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, Check, ChevronLeft,
-  Truck, Shield, RotateCcw, Play, 
-  Loader2, Video, AlertCircle, ShoppingBag // 🛍️ أضفنا أيقونة الحقيبة
+  Truck, Shield, RotateCcw, Play,
+  Loader2, Video, AlertCircle, ShoppingBag
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import { Product } from "@/types";
+import ViewersCount from "@/components/ViewersCount";
+import CountdownTimer from "@/components/CountdownTimer";
 
 export default function ProductDetail() {
   const params = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const [selectedMedia, setSelectedMedia] = useState({ type: 'image', url: '', index: 0 });
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [addedToCart, setAddedToCart] = useState(false);
   const [showColorError, setShowColorError] = useState(false);
-  
   const { addToCart, setIsCartOpen } = useCart();
 
   useEffect(() => {
@@ -35,12 +35,10 @@ export default function ProductDetail() {
         window.scrollTo(0, 0);
         const { data: mainProduct, error } = await supabase
           .from('products').select('*').eq('id', params.id).single();
-
         if (error) throw error;
         if (mainProduct) {
           setProduct(mainProduct);
           setSelectedMedia({ type: 'image', url: mainProduct.image, index: 0 });
-
           const { data: related } = await supabase
             .from('products').select('*').eq('category', mainProduct.category).neq('id', mainProduct.id).limit(4);
           if (related) setRelatedProducts(related);
@@ -56,19 +54,14 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (!product) return;
-    
     if (product.colors && product.colors.length > 0 && !selectedColor) {
       setShowColorError(true);
       setTimeout(() => setShowColorError(false), 2000);
       return;
     }
-
     addToCart({ ...product, selectedColor, selectedSize });
     setAddedToCart(true);
-    setTimeout(() => {
-        setAddedToCart(false);
-        setIsCartOpen(true);
-    }, 1000);
+    setTimeout(() => { setAddedToCart(false); setIsCartOpen(true); }, 1000);
   };
 
   if (loading) {
@@ -87,7 +80,7 @@ export default function ProductDetail() {
   return (
     <div className="min-h-screen bg-[#050505] text-luxury-cream">
       <div className="pt-24 md:pt-28 pb-20 section-padding max-w-[1500px] mx-auto">
-        
+
         <div className="flex items-center gap-2 text-xs md:text-sm text-luxury-cream/40 mb-6">
           <Link href="/" className="hover:text-luxury-beige">الرئيسية</Link>
           <ChevronLeft className="w-3 h-3" />
@@ -95,7 +88,7 @@ export default function ProductDetail() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-          
+
           {/* المعرض */}
           <div className="space-y-3 md:space-y-4">
             <div className="relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden glass-card bg-dark-900">
@@ -107,7 +100,7 @@ export default function ProductDetail() {
                 )}
               </AnimatePresence>
             </div>
-            
+
             <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 custom-scrollbar">
               {allImages.map((img, i) => (
                 <button key={`img-${i}`} onClick={() => setSelectedMedia({ type: 'image', url: img, index: i })} className={`w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${selectedMedia.url === img ? "border-luxury-beige" : "border-transparent opacity-50"}`}>
@@ -127,14 +120,20 @@ export default function ProductDetail() {
           <div className="space-y-4 md:space-y-6">
             <span className="text-luxury-beige text-xs md:text-sm tracking-widest uppercase">{product.category}</span>
             <h1 className="font-serif text-3xl md:text-5xl font-bold leading-tight">{product.name}</h1>
-            
+
             <div className="flex items-baseline gap-4">
               <span className="font-serif text-3xl md:text-4xl font-bold gold-gradient-text">{formatPrice(product.price)}</span>
             </div>
 
             <p className="text-luxury-cream/60 leading-relaxed text-sm md:text-lg">{product.description}</p>
 
-            {/* قسم الألوان */}
+            {/* 👁️ يشاهده X شخص + ⏰ عداد تنازلي */}
+            <div className="space-y-3">
+              <ViewersCount />
+              <CountdownTimer endDate="2025-08-01T00:00:00" label="ينتهي العرض خلال" size="large" />
+            </div>
+
+            {/* الألوان */}
             {product.colors && product.colors.length > 0 && (
               <div className="space-y-3 py-2">
                 <div className="flex justify-between items-center">
@@ -171,15 +170,12 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* 🛍️ قسم الأزرار (إضافة + ذهاب للحقيبة) */}
+            {/* الأزرار */}
             <div className="pt-4 space-y-3">
-              {/* زر 1: أضيفي للحقيبة */}
               <button onClick={handleAddToCart} disabled={addedToCart} className={`w-full py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${addedToCart ? "bg-green-600" : "bg-luxury-beige text-dark-900 hover:bg-luxury-gold"}`}>
                 {addedToCart ? <Check size={22} /> : <ShoppingCart size={22} />}
                 {addedToCart ? "تمت الإضافة بنجاح" : "أضيفي للحقيبة الآن"}
               </button>
-
-              {/* زر 2: الذهاب للحقيبة (الجديد) */}
               <Link href="/checkout" className="block">
                 <button className="w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all border-2 border-luxury-beige/40 text-luxury-beige hover:bg-luxury-beige/10 active:scale-95">
                   <ShoppingBag size={20} />
@@ -190,9 +186,9 @@ export default function ProductDetail() {
 
             {/* Trust Badges */}
             <div className="grid grid-cols-3 gap-4 pt-8 border-t border-white/5">
-                <div className="text-center"><Truck className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">توصيل سريع</span></div>
-                <div className="text-center"><Shield className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">أصلي 100%</span></div>
-                <div className="text-center"><RotateCcw className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">إرجاع سهل</span></div>
+              <div className="text-center"><Truck className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">توصيل سريع</span></div>
+              <div className="text-center"><Shield className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">أصلي 100%</span></div>
+              <div className="text-center"><RotateCcw className="mx-auto mb-2 text-luxury-beige/60" size={20} /><span className="text-[9px] md:text-[10px] uppercase opacity-40">إرجاع سهل</span></div>
             </div>
           </div>
         </div>

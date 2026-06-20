@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import AutoChat from "@/components/AutoChat";
+import CartReminder from "@/components/CartReminder";
 
 export const metadata: Metadata = {
   title: "هبة الرحمن | وجهتكِ العالمية للإكسسوارات الفاخرة 2026",
@@ -44,7 +45,6 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className="bg-[#050505] text-luxury-cream min-h-screen">
-        {/* بيانات منظمة لجوجل */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -78,6 +78,7 @@ export default function RootLayout({
             </main>
             <Footer />
             <AutoChat />
+            <CartReminder />
           </WishlistProvider>
         </CartProvider>
       </body>

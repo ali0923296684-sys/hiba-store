@@ -316,3 +316,70 @@ img, video {
     border-radius: 16px;
   }
 }
+/* ===== إصلاح الهواتف الضعيفة ===== */
+
+/* تعطيل التأثيرات الثقيلة على الأجهزة الضعيفة */
+@media (max-width: 768px) {
+  /* تخفيف blur */
+  .glass-card,
+  .glass-card-hover {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* تعطيل الأنيميشن الثقيلة */
+  .gold-gradient-text {
+    animation: none;
+    background-size: 100% auto;
+  }
+
+  /* تحسين الصور */
+  img {
+    image-rendering: auto;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* تخفيف الظلال */
+  .glass-card-hover:hover {
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* إزالة bg-noise على الموبايل */
+  .bg-noise {
+    background-image: none !important;
+  }
+}
+
+/* للأجهزة الضعيفة جداً */
+@media (max-width: 768px) and (max-resolution: 2dppx) {
+  .glass-card,
+  .glass-card-hover {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(20, 20, 20, 0.9);
+  }
+
+  /* إلغاء كل blur */
+  [class*="blur-"] {
+    filter: none !important;
+    -webkit-filter: none !important;
+  }
+
+  /* تبسيط الخلفيات */
+  .spotlight {
+    background: none;
+  }
+
+  /* تعطيل الفيديو على الأجهزة الضعيفة */
+  video {
+    display: none;
+  }
+
+  /* تبسيط الأنيميشن */
+  * {
+    animation-duration: 0.3s !important;
+    transition-duration: 0.2s !important;
+  }
+}

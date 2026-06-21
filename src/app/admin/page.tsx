@@ -12,7 +12,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
 import SalesChart from "@/components/SalesChart";
-
+import OrderSound from "@/components/OrderSound";
 type AdminTab = "dashboard" | "products" | "orders";
 
 const availableColors = [
@@ -270,7 +270,11 @@ export default function AdminPage() {
       <div className="flex-1 md:mr-64 p-4 md:p-8 pb-28 md:pb-8">
         {activeTab === "dashboard" && (
           <div className="space-y-8">
-            <h1 className="text-2xl md:text-3xl font-serif text-right">ملخص المتجر</h1>
+<div className="flex justify-between items-center flex-row-reverse">
+  <h1 className="text-2xl md:text-3xl font-serif">ملخص المتجر</h1>
+  <OrderSound enabled={true} />
+</div>
+
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="glass-card p-4 md:p-6 border-white/5 text-right">
                 <DollarSign className="text-luxury-beige mb-2 mr-auto" size={20} />

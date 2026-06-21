@@ -8,6 +8,7 @@ import AboutSection from "@/components/AboutSection";
 import NewArrivals from "@/components/NewArrivals";
 import BestSellers from "@/components/BestSellers";
 import WhyUs from "@/components/WhyUs";
+import LibyaDelivery from "@/components/LibyaDelivery";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
       <NewArrivals />
       <BestSellers />
       <FeaturedProducts />
+      <LibyaDelivery />
       <FashionTrends />
       <FashionTips />
       <AboutSection />

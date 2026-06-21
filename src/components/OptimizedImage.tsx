@@ -29,17 +29,18 @@ export default function OptimizedImage({
 
   if (hasError) {
     return (
-      <div className={`bg-dark-800 flex items-center justify-center ${className}`}>
+      <div className={`relative overflow-hidden bg-dark-800 flex items-center justify-center ${className}`}>
         <span className="text-white/20 text-xs">لا توجد صورة</span>
       </div>
     );
   }
 
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    <div className={`relative overflow-hidden ${fill ? "w-full h-full" : ""} ${className}`}>
       {!isLoaded && (
         <div className="absolute inset-0 bg-dark-800 animate-pulse" />
       )}
+
       {fill ? (
         <Image
           src={src}
@@ -51,7 +52,9 @@ export default function OptimizedImage({
           quality={80}
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
-          className={`object-cover transition-opacity duration-500 ${isLoaded ? "opacity-100" : "opacity-0"} ${className}`}
+          className={`object-cover transition-opacity duration-500 ${
+            isLoaded ? "opacity-100" : "opacity-0"
+          }`}
         />
       ) : (
         <Image
@@ -65,7 +68,9 @@ export default function OptimizedImage({
           quality={80}
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
-          className={`transition-opacity duration-500 ${isLoaded ? "opacity-100" : "opacity-0"} ${className}`}
+          className={`w-full h-auto transition-opacity duration-500 ${
+            isLoaded ? "opacity-100" : "opacity-0"
+          }`}
         />
       )}
     </div>

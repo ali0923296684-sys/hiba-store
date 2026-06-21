@@ -18,21 +18,43 @@ export const metadata: Metadata = {
   authors: [{ name: "هبة الرحمن" }],
   metadataBase: new URL("https://hibatrahman.xyz"),
   alternates: { canonical: "https://hibatrahman.xyz" },
-  openGraph: { title: "هبة الرحمن | إكسسوارات فاخرة", description: "توصيل لجميع مدن ليبيا", type: "website", locale: "ar_LY", siteName: "هبة الرحمن" },
+  openGraph: {
+    title: "هبة الرحمن | إكسسوارات فاخرة",
+    description: "توصيل لجميع مدن ليبيا",
+    type: "website",
+    locale: "ar_LY",
+    siteName: "هبة الرحمن",
+  },
   robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-scroll-behavior="smooth">
       <body className="bg-[#050505] text-luxury-cream min-h-screen">
         <SplashScreen />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          "@context": "https://schema.org", "@type": "Store", name: "هبة الرحمن",
-          url: "https://hibatrahman.xyz", telephone: "+218935364926",
-          address: { "@type": "PostalAddress", addressLocality: "طرابلس", addressCountry: "LY" },
-          sameAs: ["https://www.facebook.com/share/18gxGwAqoi", "https://www.instagram.com/heba.alrahman.store", "https://www.tiktok.com/@haybatalrahman.com0"]
-        })}} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Store",
+              name: "هبة الرحمن",
+              url: "https://hibatrahman.xyz",
+              telephone: "+218935364926",
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: "طرابلس",
+                addressCountry: "LY",
+              },
+              sameAs: [
+                "https://www.facebook.com/share/18gxGwAqoi",
+                "https://www.instagram.com/heba.alrahman.store",
+                "https://www.tiktok.com/@haybatalrahman.com0",
+              ],
+            }),
+          }}
+        />
         <CartProvider>
           <WishlistProvider>
             <Navbar />

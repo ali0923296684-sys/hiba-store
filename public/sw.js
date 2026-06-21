@@ -1,0 +1,18 @@
+self.addEventListener('push', function(event) {
+  const data = event.data ? event.data.json() : {};
+  const options = {
+    body: data.body || 'عرض جديد من هبة الرحمن!',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    vibrate: [200, 100, 200],
+    dir: 'rtl',
+    lang: 'ar',
+    data: { url: data.url || '/' }
+  };
+  event.waitUntil(self.registration.showNotification(data.title || 'هبة الرحمن', options));
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url || '/'));
+});

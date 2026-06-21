@@ -116,7 +116,7 @@ export default function ShopPage() {
                   className="group glass-card-hover overflow-hidden h-full"
                 >
                   <div className="relative aspect-square overflow-hidden bg-dark-800">
-                    <Link href={`/product/${product.id}`} className="block w-full h-full">
+                    <Link href={`/product/${product.id}`} className="relative block w-full h-full">
                       <Image
                         src={product.image}
                         alt={product.name}
@@ -134,7 +134,6 @@ export default function ShopPage() {
                       </div>
                     )}
 
-                    {/* ❤️ زر المفضلة */}
                     <button
                       onClick={() => toggleWishlist({
                         id: product.id,

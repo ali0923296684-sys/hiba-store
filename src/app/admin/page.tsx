@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
 import SalesChart from "@/components/SalesChart";
 import OrderSound from "@/components/OrderSound";
+
 type AdminTab = "dashboard" | "products" | "orders";
 
 const availableColors = [
@@ -39,12 +40,16 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newPromo, setNewPromo] = useState({ code: "", discount: "" });
   const [newCity, setNewCity] = useState({ name: "", cost: "" });
+  const [orderFilter, setOrderFilter] = useState("الكل");
+  const [newCategory, setNewCategory] = useState("");
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [productData, setProductData] = useState({
     name: "", price: "", category: "إكسسوارات", description: "", image: "",
     images: [] as string[], videos: [] as string[], colors: [] as string[], sizes: [] as string[]
   });
 
-  const categories = ["عطور فاخرة", "حقائب يد", "مجوهرات", "ساعات فاخرة", "أحذية فاخرة", "إكسسوارات"];
+  const defaultCategories = ["عطور فاخرة", "حقائب يد", "مجوهرات", "ساعات فاخرة", "أحذية فاخرة", "إكسسوارات"];
+  const categories = [...defaultCategories, ...customCategories];
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -200,6 +205,23 @@ export default function AdminPage() {
     setTimeout(() => setNotification(""), 3000);
   };
 
+  const updateOrderNotes = async (orderId: number, notes: string) => {
+    await supabase.from('orders').update({ notes }).eq('id', orderId);
+  };
+
+  const addCategory = () => {
+    if (!newCategory.trim()) return;
+    setCustomCategories(prev => [...prev, newCategory.trim()]);
+    setNewCategory("");
+    showNotification("✅ تم إضافة الفئة");
+  };
+
+  const removeCategory = (cat: string) => {
+    setCustomCategories(prev => prev.filter(c => c !== cat));
+  };
+
+  const filteredOrders = orderFilter === "الكل" ? dbOrders : dbOrders.filter(o => o.status === orderFilter);
+
   const printInvoice = (order: any) => {
     const items = order.items?.map((item: any) =>
       `<tr><td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${item.name}${item.selectedColor ? ` (${item.selectedColor})` : ""}${item.selectedSize ? ` [${item.selectedSize}]` : ""}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity || 1}</td></tr>`
@@ -270,10 +292,10 @@ export default function AdminPage() {
       <div className="flex-1 md:mr-64 p-4 md:p-8 pb-28 md:pb-8">
         {activeTab === "dashboard" && (
           <div className="space-y-8">
-<div className="flex justify-between items-center flex-row-reverse">
-  <h1 className="text-2xl md:text-3xl font-serif">ملخص المتجر</h1>
-  <OrderSound enabled={true} />
-</div>
+            <div className="flex justify-between items-center flex-row-reverse">
+              <h1 className="text-2xl md:text-3xl font-serif">ملخص المتجر</h1>
+              <OrderSound enabled={true} />
+            </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="glass-card p-4 md:p-6 border-white/5 text-right">
@@ -340,6 +362,33 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
+
+            {/* إدارة الفئات */}
+            <div className="glass-card p-4 md:p-6 border-luxury-beige/10 text-right">
+              <div className="flex items-center justify-end gap-2 mb-4">
+                <h2 className="font-serif text-lg">إدارة الفئات</h2>
+                <Package size={18} className="text-luxury-beige" />
+              </div>
+              <div className="flex flex-col sm:flex-row-reverse gap-2 mb-4">
+                <input
+                  placeholder="اسم الفئة الجديدة"
+                  className="bg-dark-800 p-3 rounded-xl flex-1 border border-white/5 outline-none text-right text-sm"
+                  value={newCategory}
+                  onChange={e => setNewCategory(e.target.value)}
+                />
+                <button onClick={addCategory} className="btn-primary px-6 py-3 rounded-xl text-sm font-bold">إضافة</button>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-end">
+                {categories.map(cat => (
+                  <div key={cat} className="bg-white/5 px-3 py-2 rounded-lg flex items-center gap-2 text-xs">
+                    {customCategories.includes(cat) && (
+                      <button onClick={() => removeCategory(cat)} className="text-red-400"><X size={14} /></button>
+                    )}
+                    <span className="font-bold text-luxury-beige">{cat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -384,9 +433,23 @@ export default function AdminPage() {
                 </button>
               )}
             </div>
+
+            {/* فلترة الطلبات */}
+            <div className="flex gap-2 justify-end flex-wrap">
+              {["الكل", "جاري التجهيز", "في الطريق", "تم التوصيل"].map(status => (
+                <button
+                  key={status}
+                  onClick={() => setOrderFilter(status)}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${orderFilter === status ? "bg-luxury-beige text-dark-900" : "bg-white/5 text-white/40 border border-white/10"}`}
+                >
+                  {status === "الكل" ? `الكل (${dbOrders.length})` : `${status} (${dbOrders.filter(o => o.status === status).length})`}
+                </button>
+              ))}
+            </div>
+
             <div className="space-y-4">
-              {dbOrders.length === 0 && <p className="text-center opacity-40 py-10">لا توجد طلبات بعد</p>}
-              {dbOrders.map(o => (
+              {filteredOrders.length === 0 && <p className="text-center opacity-40 py-10">لا توجد طلبات بعد</p>}
+              {filteredOrders.map(o => (
                 <div key={o.id} className="glass-card p-4 rounded-2xl border border-white/5 text-right">
                   <div className="flex justify-between items-center mb-3 pb-3 border-b border-white/5">
                     <select value={o.status} onChange={e => updateOrderStatus(o.id, e.target.value)} className={`text-[10px] font-bold p-2 rounded-lg border-none outline-none ${o.status === 'تم التوصيل' ? 'bg-green-500/10 text-green-500' : o.status === 'في الطريق' ? 'bg-blue-500/10 text-blue-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
@@ -407,6 +470,18 @@ export default function AdminPage() {
                         </p>
                       ))}
                     </div>
+
+                    {/* ملاحظات */}
+                    <div className="pt-2 mt-2 border-t border-white/5">
+                      <input
+                        type="text"
+                        placeholder="أضف ملاحظة على الطلب..."
+                        defaultValue={o.notes || ""}
+                        onBlur={(e) => updateOrderNotes(o.id, e.target.value)}
+                        className="w-full bg-dark-800/50 border border-white/5 rounded-lg px-3 py-2 text-[10px] text-right outline-none focus:border-luxury-beige/30 text-white/60 placeholder:text-white/20"
+                      />
+                    </div>
+
                     <div className="flex justify-between items-center pt-2">
                       <button onClick={() => printInvoice(o)} className="flex items-center gap-1 text-[10px] text-luxury-beige/60 hover:text-luxury-beige transition-colors">
                         <Printer size={12} /> طباعة فاتورة
